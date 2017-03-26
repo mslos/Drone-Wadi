@@ -1,6 +1,9 @@
 # Wadi-Drone
 Files necessary to set up your own version of Wadi Drone. 
 
+# Tips
+- SleepyPi compiler does not like dashes in the names of files
+- you can create a soft link with `ln -s` from sketchbook to git folder
 
 # Libraries necessary for Sleepy Pi 2
     git clone https://github.com/PaulStoffregen/Time.git
