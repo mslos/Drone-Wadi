@@ -1,0 +1,48 @@
+language: python
+
+env:
+  global:
+    - SITL_SPEEDUP=10
+    - SITL_RATE=200
+
+python:
+  - 2.7.13
+  - 3.6
+
+before_install:
+  - pip install --upgrade pip
+  
+install:
+  - pip install -r requirements.txt
+  - pip install flake8
+
+before_script:
+  # --exit-zero means that flake8 will not stop the build
+  # 127 characters is the width of a GitHub editor
+  - flake8 . --count --exit-zero  --max-line-length=127 --select=E999 --statistics  # syntax errors
+  - flake8 . --count --exit-zero  --max-line-length=127 --statistics
+
+script:
+  - nosetests --debug=nose,nose.importer --debug-log=nose_debug -svx dronekit.test.unit
+  - nosetests --debug=nose,nose.importer --debug-log=nose_debug -svx dronekit.test.sitl
+
+git:
+  depth: 10
+
+notifications:
+  email: false
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/f3f81b74f930dac9583a
+    on_success: change
+    on_failure: always
+    on_start: never
+
+matrix:
+  allow_failures:
+  - python: 3.6
+  fast_finish: true
+
+branches:
+  only:
+    - master
