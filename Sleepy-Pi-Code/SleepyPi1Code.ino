@@ -1,16 +1,9 @@
+#include "SleepyPi2.h"
+#include <Time.h>
+#include <LowPower.h>
 #include <Wire.h>
 
-#include <Time.h>
-
-#include <SleepyPi.h>
-
-#include <LowPower.h>
-
-#include <DS1374RTC.h>
-
-#include <SoftwareSerial.h>
-
-int green = 6; 
+int green = 6;
 int yellow = 5;
 
 SoftwareSerial mySerial(9, 10); // RX, TX
@@ -26,19 +19,19 @@ String command;
 int stringLength;
 String value;
 bool pi_running;
-void setup() {                
+void setup() {
   // Turn the Serial Protocol ON
   Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
   Serial.println("Start..");
-  delay(50); 
+  delay(50);
   readCommand = false;
   start = false;
   parse = false;
   mySerial.begin(9600);
-  mySerial.println("Hello, world?");  
+  mySerial.println("Hello, world?");
   SleepyPi.enablePiPower(true);
   pinMode(green, OUTPUT);
   pinMode(yellow, OUTPUT);
@@ -119,7 +112,7 @@ void parser (String &command, String &value, char dataInputBuffer[], int stringL
   int valueIndex = 0;
   for (int x =1; x<= stringLength; x++){
     if (x<5){
-      command= command+dataInputBuffer[x]; 
+      command= command+dataInputBuffer[x];
     }
     else if ((dataInputBuffer[x]!=' ')){
       valueBuffer[valueIndex]=dataInputBuffer[x];
@@ -206,11 +199,3 @@ void turnSetup(int green, int yellow) {
   digitalWrite(green, LOW);
   digitalWrite(yellow, HIGH);
 }
-
-
-
-
-
-
-
-

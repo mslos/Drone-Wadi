@@ -3,7 +3,7 @@ __author__ = 'NYUAD'
 import serial
 import os
 import subprocess as sp
-ser = serial.Serial("/dev/ttyAMA0", 9600, timeout = 1)
+ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 ID = "001"
 import time
 
@@ -84,7 +84,7 @@ def downloadFiles(): #Transfers files from camera trap to drone.
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
 # Camera IP: 192.168.10.22
-    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.10.22:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
+    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.15:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
 
