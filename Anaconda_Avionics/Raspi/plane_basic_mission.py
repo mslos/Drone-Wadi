@@ -10,15 +10,6 @@ import math
 from pymavlink import mavutil
 import argparse
 
-## DOWNLOAD MISSION
-def download_mission():
-    """
-    Download the current mission from the vehicle.
-    """
-    cmds = vehicle.commands
-    cmds.download()
-    cmds.wait_ready() # wait until download is complete.
-
 ## fn: Callback definition for mode observer
 def mode_callback(self, attr_name, msg):
 	print "Vehicle Mode", self.mode
@@ -147,12 +138,24 @@ def arm_and_takeoff(targerAltitude):
         print "Takeoff in progress. Altitude: ", vehicle.location.global_relative_frame.alt, " meters"
         time.sleep(0.5)
 
+## CALCULATE DISTANCE BETWEEN TWO GPS COORDINATE
+def get_distance_metres(aLocation1, aLocation2):
+    """
+    Returns the ground distance in metres between two LocationGlobal objects.
+    This method is an approximation, and will not be accurate over large distances and close to the
+    earth's poles. It comes from the ArduPilot test code:
+    https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    """
+    dlat = aLocation2.lat - aLocation1.lat
+    dlong = aLocation2.lon - aLocation1.lon
+    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
 def set_full_loiter_mission(camera_locations, landing_sequence):
     print "Download mission"
-    download_mission()
-
     cmds = vehicle.commands
+    cmds.download()
+    cmds.wait_ready()
 
     print "Clear any existing commands"
     cmds.clear()
@@ -204,27 +207,24 @@ camera_locations, landing_sequence = extract_waypoints()
 ## UPLOAD FULL LOITER MISSION
 set_full_loiter_mission(camera_locations, landing_sequence)
 
-
-"""
-## ARM AND BEGIN MISSION
-print "Basic pre-arm checks"
-# Don't let the user try to arm until autopilot is ready
-while not vehicle.is_armable:
-    print " Waiting for vehicle to initialise..."
+## WAIF FOR VEHICLE TO SWITCH TO AUTO
+while vehicle.mode.name != "AUTO":
+    print "Waiting for user to begin mission"
     time.sleep(1)
+## MONITOR PROGRESS ON EACH CAMERA LOCATION
+for camera in camera_locations:
+    while get_distance_metres(camera, vehicle.location.global_frame) >= 15:
+        print "En route to camera..."
+    print "Arrived at camera location. Downloading images..."
+    time.sleep(150)
 
-print "Arming motors"
-# Plane should arm in MANUAL mode
-vehicle.mode = VehicleMode("GUIDED")
-vehicle.armed = True
+    while vehicle.mode.name != "CIRCLE":
+        vehicle.mode = VehicleMode("CIRCLE")
 
-while not vehicle.armed:
-    print " Waiting for arming..."
-    time.sleep(1)
+    print "Camera download complete. Beginning next mission item."
+    while vehicle.mode.name != "AUTO":
+        vehicle.mode = VehicleMode("AUTO")
 
-vehicle.mode = VehicleMode("AUTO")
-while True:
-    print "Lat: ", vehicle.location.global_frame.lat, "Lon: ", vehicle.location.global_frame.lat, "Alt: ", vehicle.location.global_relative_frame.alt
-    time.sleep(1)
-
-"""
+## RETURN TO HOME
+#  At this point, it should begin going through the landing sequence points.
+print "Starting Landing Sequence"
