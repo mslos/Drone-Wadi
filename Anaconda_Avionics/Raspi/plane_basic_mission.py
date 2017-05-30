@@ -157,9 +157,6 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
     print "Clear any existing commands"
     cmds.clear()
 
-    print "Download mission"
-    download_mission()
-
     #  Add takeoff command
     print "Adding takeoff command"
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 30))
