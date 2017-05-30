@@ -172,14 +172,14 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
     #  Add landing sequence
     print "Adding landing sequece"
 
+    #  Start landing Ssquence
+    print "Adding start landing command"
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
     #  Approach runway
     print "Adding runway approach waypoints"
     for i in range(len(landing_sequence)-1):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, landing_sequence[i].lat, landing_sequence[i].lon, int(landing_sequence[i].alt)))
-
-    #  Start landing Ssquence
-    print "Adding start landing command"
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     #  Execute landing operation
     print "Adding landing command"
