@@ -194,11 +194,10 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
 
 ################  MAIN  ################
 ## CONNECT TO VEHICLE
-try
-    connection_string = "tcp:127.0.0.1:5762"
-    print 'Connecting to vehicle on: %s' % connection_string
-    vehicle = connect(connection_string, wait_ready=True)
-except
+
+connection_string = "/dev/ttyS0"
+print 'Connecting to vehicle on: %s' % connection_string
+vehicle = connect(connection_string, wait_ready=True)
 
 vehicle.add_attribute_listener('mode', mode_callback)
 
@@ -208,6 +207,8 @@ camera_locations, landing_sequence = extract_waypoints()
 ## UPLOAD FULL LOITER MISSION
 set_full_loiter_mission(camera_locations, landing_sequence)
 
+
+"""
 ## ARM AND BEGIN MISSION
 print "Basic pre-arm checks"
 # Don't let the user try to arm until autopilot is ready
@@ -217,17 +218,16 @@ while not vehicle.is_armable:
 
 print "Arming motors"
 # Plane should arm in MANUAL mode
-vehicle.mode = VehicleMode("MANUAL")
+vehicle.mode = VehicleMode("GUIDED")
 vehicle.armed = True
 
 while not vehicle.armed:
     print " Waiting for arming..."
     time.sleep(1)
 
-#vehicle.mode = VehicleMode("AUTO")
+vehicle.mode = VehicleMode("AUTO")
 while True:
-    pass
-    """
     print "Lat: ", vehicle.location.global_frame.lat, "Lon: ", vehicle.location.global_frame.lat, "Alt: ", vehicle.location.global_relative_frame.alt
     time.sleep(1)
-    """
+
+"""
