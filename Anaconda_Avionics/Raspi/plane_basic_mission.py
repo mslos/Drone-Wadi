@@ -52,7 +52,7 @@ def extract_waypoints():
     #  Raw latitude, longitude, and altitude for LANDING SEQUENCE translated to
     #  LocationGlobals
     landing_waypoints = []
-    for line in range(len(cameras)):
+    for line in range(len(landing)):
     	if not cameras[line][0].isalpha(): # Not data column descriptor
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
             print "Lon: " + str(cameras[line][0]) + "Lat: " + str(cameras[line][1]) + "Alt: " + str(cameras[line][2])
