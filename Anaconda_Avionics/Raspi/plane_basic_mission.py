@@ -197,7 +197,7 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
 
 connection_string = "/dev/ttyS0"
 print 'Connecting to vehicle on: %s' % connection_string
-vehicle = connect(connection_string, wait_ready=True)
+vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 
 vehicle.add_attribute_listener('mode', mode_callback)
 
