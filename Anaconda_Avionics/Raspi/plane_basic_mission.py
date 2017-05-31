@@ -162,7 +162,7 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
 
     #  Add takeoff command
     print "Adding takeoff command"
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 30))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30, 0, 0, 0, 0, 0, 30))
 
     #  Add camera trap locations as unlimeted loiter commands. The aircraft will
     #  fly to the GPS coordinate and circle them indefinitely. The autopilot
@@ -170,7 +170,7 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
     #  AUTO and back into AUTO.
     print "Adding new LOITER waypoint commands."
     for i in range(len(camera_locations)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 0, 0, 10, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 0, 0, 55, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
 
     #  Add landing sequence
     print "Adding landing sequece"
@@ -194,7 +194,6 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
 
 ################  MAIN  ################
 ## CONNECT TO VEHICLE
-
 connection_string = "/dev/ttyS0"
 print 'Connecting to vehicle on: %s' % connection_string
 vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
@@ -204,25 +203,31 @@ vehicle.add_attribute_listener('mode', mode_callback)
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
 camera_locations, landing_sequence = extract_waypoints()
 
+## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
+while str(vehicle.mode.name) != "GUIDED"
+	print "Waiting for user to initiate mission"
+	time.sleep(0.5)
+print "Raspi is taking control of drone"
+
 ## UPLOAD FULL LOITER MISSION
 set_full_loiter_mission(camera_locations, landing_sequence)
 
 ## WAIF FOR VEHICLE TO SWITCH TO AUTO
-while vehicle.mode.name != "AUTO":
+while str(vehicle.mode.name) != "AUTO":
     print "Waiting for user to begin mission"
     time.sleep(1)
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
 for camera in camera_locations:
-    while get_distance_metres(camera, vehicle.location.global_frame) >= 15:
+    while get_distance_metres(camera, vehicle.location.global_frame) >= 20:
         print "En route to camera..."
     print "Arrived at camera location. Downloading images..."
     time.sleep(150)
 
-    while vehicle.mode.name != "CIRCLE":
+    while str(vehicle.mode.name) != "CIRCLE":
         vehicle.mode = VehicleMode("CIRCLE")
 
     print "Camera download complete. Beginning next mission item."
-    while vehicle.mode.name != "AUTO":
+    while str(vehicle.mode.name) != "AUTO":
         vehicle.mode = VehicleMode("AUTO")
 
 ## RETURN TO HOME
