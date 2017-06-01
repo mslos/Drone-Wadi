@@ -215,7 +215,7 @@ vehicle.add_attribute_listener('mode', mode_callback)
 camera_locations, landing_sequence = extract_waypoints()
 
 ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
-while str(vehicle.mode.name) != "GUIDED"
+while str(vehicle.mode.name) != "GUIDED":
 	log(target, "Waiting for user to initiate mission")
 	time.sleep(0.5)
 print log(target, "Raspi is taking control of drone")
