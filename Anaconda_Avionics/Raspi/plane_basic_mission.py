@@ -209,9 +209,6 @@ vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 filename = "mission_raspi_log.txt"
 target = open(filename, 'w')
 
-## ADD MODE CHANGE LISTENER
-vehicle.add_attribute_listener('mode', mode_callback, target)
-
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
 camera_locations, landing_sequence = extract_waypoints(target)
 
@@ -228,6 +225,10 @@ set_full_loiter_mission(camera_locations, landing_sequence, target)
 while str(vehicle.mode.name) != "AUTO":
     log(target, "Waiting for user to begin mission")
     time.sleep(1)
+
+## ADD MODE CHANGE LISTENER
+vehicle.add_attribute_listener(vehicle, 'mode', mode_callback, target)
+
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
 cam_num = len(camera_locations)
 
