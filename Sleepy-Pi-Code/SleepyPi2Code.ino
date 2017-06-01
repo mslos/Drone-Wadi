@@ -21,9 +21,36 @@ String command;
 int stringLength;
 String value;
 bool pi_running;
+
+
+#define RPI_POWER_TIMEOUT_MS     9000    // in ms - so this is 6 seconds
+#define TIME_INTERVAL_SECONDS    0
+#define TIME_INTERVAL_MINUTES    2
+#define TIME_INTERVAL_HOURS      0
+#define TIME_INTERVAL_DAYS       0
+
+tmElements_t powerUpTime;
+
+void alarm_isr()
+{
+}
+
 void setup() {
-  // Turn the Serial Protocol ON
-  Serial.begin(9600);
+
+  Serial.begin(9600); //Serial for debugging
+
+  // set alarm time
+  powerUpTime.Second = TIME_INTERVAL_SECONDS;
+  powerUpTime.Minute = TIME_INTERVAL_MINUTES;
+  powerUpTime.Hour   = TIME_INTERVAL_HOURS;
+  powerUpTime.Day    = TIME_INTERVAL_DAYS;
+
+  delay(1000);
+
+  SleepyPi.enableWakeupAlarm();
+  SleepyPi.setAlarm(powerUpTime);
+
+
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
@@ -32,7 +59,7 @@ void setup() {
   readCommand = false;
   start = false;
   parse = false;
-  mySerial.begin(9600);
+  mySerial.begin(9600); //software serial for communication with Xbee
   mySerial.println("Hello, world?");
   SleepyPi.enablePiPower(true);
   pinMode(green, OUTPUT);
@@ -67,9 +94,11 @@ void loop() {
         mySerial.print("%"+ID+" "+command+" "+value+'\r'+'\n');
       }
       if (value == "000001"){
+        //wake up RPi
         startPi ();
       }
       if (value == "000000") {
+        //shut down RPi
         shutPi();
       }
     }
@@ -84,6 +113,25 @@ void loop() {
   if (Serial.available()){
     mySerial.write(Serial.read());
   }
+
+
+
+  // Enable inturrupt
+  attachInterrupt(0, alarm_isr, FALLING);		// Alarm pin
+
+
+  //TODO: Do you need to reset the alarm? What is ackAlarm?
+  //    SleepyPi.ackAlarm();
+  //    SleepyPi.enableWakeupAlarm();
+  //    SleepyPi.setAlarm(powerUpTime);
+
+  // Powerdown sleepy pi and wake up when pin is low
+  SleepyPi.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+
+  // Disable interrupt once pi has powered up
+  detachInterrupt(0);
+
+
 
 }
 
