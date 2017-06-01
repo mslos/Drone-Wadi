@@ -19,7 +19,7 @@ def mode_callback(self, attr_name, msg):
 		filename = "mission_kill.txt"
 		target = open(filename, 'w')
 		target.write("PROGRAM KILLED")
-		exit()
+		quit()
 		print "We should never get here! \nFUCK FUCK FUCK \nAHHHH"
 		target.write("We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
@@ -243,6 +243,7 @@ nextwaypoint = vehicle.commands.next
 while (nextwaypoint <= cam_num):
 	if (vehicle.commands.next == nextwaypoint):
 		log(target, "Distance to camera: " + str(get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)))
+		time.sleep(1)
 	else:
 		log(target, "Arrived at camera")
 		nextwaypoint = vehicle.commands.next
