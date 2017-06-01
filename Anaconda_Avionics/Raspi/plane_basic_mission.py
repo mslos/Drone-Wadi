@@ -239,21 +239,23 @@ cam_num = len(camera_locations)
 
 while (vehicle.commands.next == 0):
 	log(target, "Taking off")
+	time.sleep(0.5)
 
 nextwaypoint = vehicle.commands.next
 while (nextwaypoint <= cam_num):
-	if (vehicle.commands.next == nextwaypoint):
-		log(target, "Distance to camera: " + str(get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)))
+	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
+	if  distance >= 100:
+		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
 		time.sleep(1)
 	else:
 		log(target, "Arrived at camera")
-		nextwaypoint = vehicle.commands.next
 		sleep(60)
 		while str(vehicle.mode.name) != "CIRCLE":
 			vehicle.mode = VehicleMode("CIRCLE")
 		log(target, "Camera download complete. Beginning next mission item.")
 		while str(vehicle.mode.name) != "AUTO":
 			vehicle.mode = VehicleMode("AUTO")
+		nextwaypoint = vehicle.commands.next
 
 ## RETURN TO HOME
 #  At this point, it should begin going through the landing sequence points.
