@@ -197,6 +197,7 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
 def log(target_file, message):
 	print message
 	target_file.write(message)
+	target_file.write('\n')
 
 ################  MAIN  ################
 ## CONNECT TO VEHICLE
@@ -205,7 +206,7 @@ print 'Connecting to vehicle on: %s' % connection_string
 vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 
 ## PREPARE MISSION LOG FILE
-filename = "mission_raspi_log"
+filename = "mission_raspi_log.txt"
 target = open(filename, 'w')
 
 ## ADD MODE CHANGE LISTENER
