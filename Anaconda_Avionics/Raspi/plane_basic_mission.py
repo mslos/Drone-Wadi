@@ -249,7 +249,7 @@ while (nextwaypoint <= cam_num):
 		time.sleep(1)
 	else:
 		log(target, "Arrived at camera")
-		sleep(60)
+		time.sleep(60)
 		while str(vehicle.mode.name) != "CIRCLE":
 			vehicle.mode = VehicleMode("CIRCLE")
 		log(target, "Camera download complete. Beginning next mission item.")
