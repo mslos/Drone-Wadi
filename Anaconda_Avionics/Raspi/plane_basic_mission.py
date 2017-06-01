@@ -12,20 +12,20 @@ import argparse
 import sys
 
 ## fn: Callback definition for mode observer
-def mode_callback(self, attr_name, msg):
-	print "Vehicle Mode", self.mode
+def mode_callback(self, attr_name, msg, target):
+	log(target, "Vehicle Mode", self.mode)
 	if str(self.mode) == "VehicleMode:STABILIZE": # Quit program entirely to silence Raspberry Pi
-		print "Quitting program..."
+		log(target, "Quitting program...")
 		exit()
-		print "We should never get here! \nFUCK FUCK FUCK \nAHHHH"
+		log(target, "We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
 ## fn: EXTRACT WAYPOINTS AND LANDING SEQUENCE FROM FILE
-def extract_waypoints():
+def extract_waypoints(target):
     parser = argparse.ArgumentParser(description='Process some.')
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
     args = parser.parse_args()
 
-    print "Reading Mission File"
+    log(target, "Reading Mission File")
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     cameras = [[i for i in line.strip().split(',')] for line in args.file[0].readlines()]
 
@@ -35,9 +35,9 @@ def extract_waypoints():
     for line in range(len(cameras)):
     	if not cameras[line][0].isalpha(): # Not data column descriptor
             camera_waypoints.append(LocationGlobal(float(cameras[line][0]),float(cameras[line][1]),float(cameras[line][2])))
-            print "Lon: " + str(cameras[line][0]) + "Lat: " + str(cameras[line][1]) + "Alt: " + str(cameras[line][2])
+            log(target, "Lon: " + str(cameras[line][0]) + "Lat: " + str(cameras[line][1]) + "Alt: " + str(cameras[line][2]))
 
-    print "Reading Landing Sequence"
+    log(target, "Reading Landing Sequence")
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     landing = [[i for i in line.strip().split(',')] for line in args.file[1].readlines()]
 
@@ -47,7 +47,7 @@ def extract_waypoints():
     for line in range(len(landing)):
     	if not landing[line][0].isalpha(): # Not data column descriptor
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
-            print "Lon: " + str(landing[line][0]) + "Lat: " + str(landing[line][1]) + "Alt: " + str(landing[line][2])
+            log(target, "Lon: " + str(landing[line][0]) + "Lat: " + str(landing[line][1]) + "Alt: " + str(landing[line][2]))
 
     return camera_waypoints, landing_waypoints
 
@@ -152,45 +152,45 @@ def get_distance_metres(aLocation1, aLocation2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(camera_locations, landing_sequence):
-    print "Download mission"
+def set_full_loiter_mission(camera_locations, landing_sequence, target):
+    log(target, "Download mission")
     cmds = vehicle.commands
     cmds.download()
     cmds.wait_ready()
 
-    print "Clear any existing commands"
+    log(target, "Clear any existing commands")
     cmds.clear()
 
     #  Add takeoff command
-    print "Adding takeoff command"
+    log(target, "Adding takeoff command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30, 0, 0, 0, 0, 0, 30))
 
     #  Add camera trap locations as unlimeted loiter commands. The aircraft will
     #  fly to the GPS coordinate and circle them indefinitely. The autopilot
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
-    print "Adding new LOITER waypoint commands."
+    log(target, "Adding new LOITER waypoint commands.")
     for i in range(len(camera_locations)):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 0, 0, 55, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
 
     #  Add landing sequence
-    print "Adding landing sequece"
+    log(target, "Adding landing sequece")
 
     #  Start landing Ssquence
-    print "Adding start landing command"
+    log(target, "Adding start landing command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     #  Approach runway
-    print "Adding runway approach waypoints"
+    log(target, "Adding runway approach waypoints")
     for i in range(len(landing_sequence)-1):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, landing_sequence[i].lat, landing_sequence[i].lon, int(landing_sequence[i].alt)))
 
     #  Execute landing operation
-    print "Adding landing command"
+    log(target, "Adding landing command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, landing_sequence[len(landing_sequence)-1].lat, landing_sequence[len(landing_sequence)-1].lon, 0))
 
     #  Upload mission
-    print "Uploading full loiter mission"
+    log(target, "Uploading full loiter mission")
     cmds.upload()
 
 ## fn: LOG STATUS PROCESSOR
@@ -210,10 +210,10 @@ filename = "mission_raspi_log.txt"
 target = open(filename, 'w')
 
 ## ADD MODE CHANGE LISTENER
-vehicle.add_attribute_listener('mode', mode_callback)
+vehicle.add_attribute_listener('mode', mode_callback, target)
 
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
-camera_locations, landing_sequence = extract_waypoints()
+camera_locations, landing_sequence = extract_waypoints(target)
 
 ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
 while str(vehicle.mode.name) != "GUIDED":
@@ -222,7 +222,7 @@ while str(vehicle.mode.name) != "GUIDED":
 print log(target, "Raspi is taking control of drone")
 
 ## UPLOAD FULL LOITER MISSION
-set_full_loiter_mission(camera_locations, landing_sequence)
+set_full_loiter_mission(camera_locations, landing_sequence, target)
 
 ## WAIT FOR VEHICLE TO SWITCH TO AUTO
 while str(vehicle.mode.name) != "AUTO":
