@@ -19,7 +19,7 @@ def mode_callback(self, attr_name, msg):
 		filename = "mission_kill.txt"
 		target = open(filename, 'w')
 		target.write("PROGRAM KILLED")
-		quit()
+		sys.exit()
 		print "We should never get here! \nFUCK FUCK FUCK \nAHHHH"
 		target.write("We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
