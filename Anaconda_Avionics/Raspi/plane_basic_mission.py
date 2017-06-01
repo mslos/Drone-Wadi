@@ -15,12 +15,12 @@ import sys
 def mode_callback(self, attr_name, msg):
 	print "Vehicle Mode", self.mode
 	if str(self.mode) == "VehicleMode:STABILIZE": # Quit program entirely to silence Raspberry Pi
-		print "Quitting program...")
+		print "Quitting program..."
 		filename = "mission_kill.txt"
 		target = open(filename, 'w')
 		target.write("PROGRAM KILLED")
 		exit()
-		"We should never get here! \nFUCK FUCK FUCK \nAHHHH"
+		print "We should never get here! \nFUCK FUCK FUCK \nAHHHH"
 		target.write("We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
 ## fn: EXTRACT WAYPOINTS AND LANDING SEQUENCE FROM FILE
