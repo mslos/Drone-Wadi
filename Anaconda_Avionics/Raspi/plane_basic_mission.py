@@ -244,7 +244,7 @@ while (vehicle.commands.next == 0):
 nextwaypoint = vehicle.commands.next
 while (nextwaypoint <= cam_num):
 	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
-	if  distance >= 100:
+	if  distance >= 175:
 		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
 		time.sleep(1)
 	else:
