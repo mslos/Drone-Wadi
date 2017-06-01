@@ -12,12 +12,16 @@ import argparse
 import sys
 
 ## fn: Callback definition for mode observer
-def mode_callback(self, attr_name, msg, target):
-	log(target, "Vehicle Mode", self.mode)
+def mode_callback(self, attr_name, msg):
+	print "Vehicle Mode", self.mode
 	if str(self.mode) == "VehicleMode:STABILIZE": # Quit program entirely to silence Raspberry Pi
-		log(target, "Quitting program...")
+		print "Quitting program...")
+		filename = "mission_kill.txt"
+		target = open(filename, 'w')
+		target.write("PROGRAM KILLED")
 		exit()
-		log(target, "We should never get here! \nFUCK FUCK FUCK \nAHHHH")
+		"We should never get here! \nFUCK FUCK FUCK \nAHHHH"
+		target.write("We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
 ## fn: EXTRACT WAYPOINTS AND LANDING SEQUENCE FROM FILE
 def extract_waypoints(target):
@@ -227,7 +231,7 @@ while str(vehicle.mode.name) != "AUTO":
     time.sleep(1)
 
 ## ADD MODE CHANGE LISTENER
-vehicle.add_attribute_listener(vehicle, 'mode', mode_callback, target)
+vehicle.add_attribute_listener('mode', mode_callback)
 
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
 cam_num = len(camera_locations)
