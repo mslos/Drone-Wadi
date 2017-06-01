@@ -9,6 +9,7 @@ import time
 import math
 from pymavlink import mavutil
 import argparse
+import sys
 
 ## fn: Callback definition for mode observer
 def mode_callback(self, attr_name, msg):
@@ -192,12 +193,22 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
     print "Uploading full loiter mission"
     cmds.upload()
 
+## fn: LOG STATUS PROCESSOR
+def log(target_file, message):
+	print message
+	target_file.write(message)
+
 ################  MAIN  ################
 ## CONNECT TO VEHICLE
 connection_string = "/dev/ttyS0"
 print 'Connecting to vehicle on: %s' % connection_string
 vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 
+## PREPARE MISSION LOG FILE
+filename = "mission_raspi_log"
+target = open(filename, 'w')
+
+## ADD MODE CHANGE LISTENER
 vehicle.add_attribute_listener('mode', mode_callback)
 
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
@@ -205,31 +216,37 @@ camera_locations, landing_sequence = extract_waypoints()
 
 ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
 while str(vehicle.mode.name) != "GUIDED"
-	print "Waiting for user to initiate mission"
+	log(target, "Waiting for user to initiate mission")
 	time.sleep(0.5)
-print "Raspi is taking control of drone"
+print log(target, "Raspi is taking control of drone")
 
 ## UPLOAD FULL LOITER MISSION
 set_full_loiter_mission(camera_locations, landing_sequence)
 
-## WAIF FOR VEHICLE TO SWITCH TO AUTO
+## WAIT FOR VEHICLE TO SWITCH TO AUTO
 while str(vehicle.mode.name) != "AUTO":
-    print "Waiting for user to begin mission"
+    log(target, "Waiting for user to begin mission")
     time.sleep(1)
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
-for camera in camera_locations:
-    while get_distance_metres(camera, vehicle.location.global_frame) >= 20:
-        print "En route to camera..."
-    print "Arrived at camera location. Downloading images..."
-    time.sleep(150)
+cam_num = len(camera_locations)
 
-    while str(vehicle.mode.name) != "CIRCLE":
-        vehicle.mode = VehicleMode("CIRCLE")
+while (vehicle.commands.next == 0):
+	log(target, "Taking off")
 
-    print "Camera download complete. Beginning next mission item."
-    while str(vehicle.mode.name) != "AUTO":
-        vehicle.mode = VehicleMode("AUTO")
+nextwaypoint = vehicle.commands.next
+while (nextwaypoint <= cam_num):
+	if (vehicle.commands.next == nextwaypoint):
+		log(target, "Distance to camera: " + str(get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame))
+	else:
+		log(target, "Arrived at camera")
+		nextwaypoint = vehicle.commands.next
+		sleep(60)
+		while str(vehicle.mode.name) != "CIRCLE":
+	        vehicle.mode = VehicleMode("CIRCLE")
+		log(target, "Camera download complete. Beginning next mission item.")
+	    while str(vehicle.mode.name) != "AUTO":
+	        vehicle.mode = VehicleMode("AUTO")
 
 ## RETURN TO HOME
 #  At this point, it should begin going through the landing sequence points.
-print "Starting Landing Sequence"
+log(target, "Starting Landing Sequence")
