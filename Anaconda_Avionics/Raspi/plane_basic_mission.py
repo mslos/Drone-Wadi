@@ -236,7 +236,7 @@ while (vehicle.commands.next == 0):
 nextwaypoint = vehicle.commands.next
 while (nextwaypoint <= cam_num):
 	if (vehicle.commands.next == nextwaypoint):
-		log(target, "Distance to camera: " + str(get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame))
+		log(target, "Distance to camera: " + str(get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)))
 	else:
 		log(target, "Arrived at camera")
 		nextwaypoint = vehicle.commands.next
