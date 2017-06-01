@@ -245,7 +245,7 @@ while (nextwaypoint <= cam_num):
 			vehicle.mode = VehicleMode("CIRCLE")
 		log(target, "Camera download complete. Beginning next mission item.")
 		while str(vehicle.mode.name) != "AUTO":
-	        vehicle.mode = VehicleMode("AUTO")
+			vehicle.mode = VehicleMode("AUTO")
 
 ## RETURN TO HOME
 #  At this point, it should begin going through the landing sequence points.
