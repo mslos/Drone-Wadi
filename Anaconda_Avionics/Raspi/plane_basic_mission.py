@@ -174,9 +174,9 @@ def set_full_loiter_mission(camera_locations, landing_sequence, target):
     #  fly to the GPS coordinate and circle them indefinitely. The autopilot
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
-    log(target, "Adding new LOITER waypoint commands.")
+    log(target, "Adding new waypoint commands.")
     for i in range(len(camera_locations)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 0, 0, 55, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
 
     #  Add landing sequence
     log(target, "Adding landing sequece")
@@ -225,6 +225,7 @@ print log(target, "Raspi is taking control of drone")
 
 ## UPLOAD FULL LOITER MISSION
 set_full_loiter_mission(camera_locations, landing_sequence, target)
+vehicle.commands.next = 0
 
 ## WAIT FOR VEHICLE TO SWITCH TO AUTO
 while str(vehicle.mode.name) != "AUTO":
@@ -242,21 +243,24 @@ while (vehicle.commands.next == 0):
 	time.sleep(0.5)
 
 nextwaypoint = vehicle.commands.next
-while (nextwaypoint <= cam_num):
-	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
-	if  distance >= 175:
+while (vehicle.commands.next <= cam_num):
+	while vehicle.commands.next == nextwaypoint:
+		distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
 		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
-		time.sleep(1)
-	else:
-		log(target, "Arrived at camera")
-		time.sleep(60)
-		while str(vehicle.mode.name) != "CIRCLE":
-			vehicle.mode = VehicleMode("CIRCLE")
-		log(target, "Camera download complete. Beginning next mission item.")
-		while str(vehicle.mode.name) != "AUTO":
-			vehicle.mode = VehicleMode("AUTO")
-		nextwaypoint = vehicle.commands.next
+		time.sleep(0.5)
+	log(target, "Arrived at camera. LOITER for 30 seonds.")
+	while (str(vehicle.mode.name) != "LOITER"):
+		vehicle.mode = VehicleMode("LOITER")
+	time.sleep(30)
+	log(target, "Download complete. Continue mission")
+	while (str(vehicle.mode.name) != "AUTO"):
+		vehicle.mode = VehicleMode("AUTO")
+	nextwaypoint = vehicle.commands.next
 
 ## RETURN TO HOME
 #  At this point, it should begin going through the landing sequence points.
 log(target, "Starting Landing Sequence")
+while True:
+	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
+	log(target, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
+	time.sleep(1)
