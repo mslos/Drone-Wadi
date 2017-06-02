@@ -249,6 +249,7 @@ while (vehicle.commands.next <= cam_num):
 		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
 		time.sleep(0.5)
 	log(target, "Arrived at camera. LOITER for 30 seonds.")
+	#  This is how we change vehicle mode
 	while (str(vehicle.mode.name) != "LOITER"):
 		vehicle.mode = VehicleMode("LOITER")
 	time.sleep(30)
