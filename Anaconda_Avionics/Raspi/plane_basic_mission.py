@@ -238,14 +238,16 @@ vehicle.add_attribute_listener('mode', mode_callback)
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
 cam_num = len(camera_locations)
 
-while (vehicle.commands.next == 0):
+while (vehicle.commands.next == 1):
 	log(target, "Taking off")
 	time.sleep(0.5)
 
 nextwaypoint = vehicle.commands.next
-while (vehicle.commands.next <= cam_num):
+while (vehicle.commands.next <= cam_num+1):
 	while vehicle.commands.next == nextwaypoint:
-		distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
+		distance = get_distance_metres(camera_locations[nextwaypoint-2], vehicle.location.global_frame)
+		# camera_locations is indexed at 0, and commands are indexed at 1
+		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
 		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
 		time.sleep(0.5)
 	log(target, "Arrived at camera. LOITER for 30 seonds.")
