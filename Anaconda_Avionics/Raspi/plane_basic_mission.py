@@ -184,7 +184,7 @@ while (vehicle.commands.next < (land_num+cam_num)):
 
 current_alt = vehicle.location.global_relative_frame.alt
 
-while (current_alt >= 1):
+while (current_alt >= 0.5):
 	current_alt = vehicle.location.global_relative_frame.alt
 	log(target, "Landing. Alt: %s" % current_alt
 	time.sleep(0.5)
