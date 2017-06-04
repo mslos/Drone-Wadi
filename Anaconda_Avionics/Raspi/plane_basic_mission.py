@@ -56,94 +56,6 @@ def extract_waypoints(target):
 
     return camera_waypoints, landing_waypoints
 
-## fn: UPLOAD WAYPOINT
-def upload_waypoint(original_location, waypoints):
-
-    print "Download mission"
-    download_mission()
-
-    cmds = vehicle.commands
-
-    print "Clear any existing commands"
-    cmds.clear()
-
-    print "Download mission"
-    download_mission()
-
-    print "Adding new waypoint commands."
-    for i in range(len(waypoints)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, waypoints[i].lat, waypoints[i].lon, int(waypoints[i].alt)))
-
-    print "Uploading Commands"
-    cmds.upload()
-
-## fn: UPLOAD LANDING SEQUENCE
-def upload_landing_sequence(waypoints):
-
-    last = len(waypoints)
-
-    print "Download mission"
-    download_mission()
-
-    cmds = vehicle.commands
-
-    print "Clear any existing commands"
-    cmds.clear()
-
-    print "Download mission"
-    download_mission()
-
-    #  Approach runway
-    print "Adding runway approach waypoints"
-    for i in range(last-1):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, waypoints[i].lat, waypoints[i].lon, int(waypoints[i].alt)))
-
-    #  Start landing Ssquence
-    print "Adding start landing command"
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-    #  Execute landing operation
-    print "Adding landing command"
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, waypoints[last].lat, waypoints[last].lon, 0))
-
-    print "Uploading Landing Sequence"
-    cmds.upload()
-
-## fn: ARM AND TAKEOFF
-def arm_and_takeoff(targerAltitude):
-
-    #  Don't let the user try to arm until autopilot is ready
-    print "Basic pre-arm checks"
-    while not vehicle.is_armable:
-        print " Waiting for vehicle to initialise..."
-        time.sleep(1)
-
-    print "Download mission"
-    download_mission()
-
-    cmds = vehicle.commands
-
-    print "Clear any existing commands"
-    cmds.clear()
-
-    print "Download mission"
-    download_mission()
-
-    print "Uploading Takeoff command"
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 30))
-    cmds.upload()
-
-    print "Arming motors"
-    # Plane should arm in MANUAL mode
-    vehicle.mode = VehicleMode("MANUAL")
-    vehicle.armed = True
-
-    vehicle.mode = VehicleMode("AUTO")
-
-    while str(vehicle.mode) != "LOITER":
-        print "Takeoff in progress. Altitude: ", vehicle.location.global_relative_frame.alt, " meters"
-        time.sleep(0.5)
-
 ## CALCULATE DISTANCE BETWEEN TWO GPS COORDINATE
 def get_distance_metres(aLocation1, aLocation2):
     """
@@ -237,9 +149,11 @@ vehicle.add_attribute_listener('mode', mode_callback)
 
 ## MONITOR PROGRESS ON EACH CAMERA LOCATION
 cam_num = len(camera_locations)
+land_num = len(landing_sequence)
 
 while (vehicle.commands.next == 1):
-	log(target, "Taking off")
+	current_alt = vehicle.location.global_relative_frame.alt
+	log(target, "Taking off. Alt: %s" % current_alt
 	time.sleep(0.5)
 
 nextwaypoint = vehicle.commands.next
@@ -263,7 +177,14 @@ while (vehicle.commands.next <= cam_num+1):
 ## RETURN TO HOME
 #  At this point, it should begin going through the landing sequence points.
 log(target, "Starting Landing Sequence")
-while True:
+while (vehicle.commands.next < (land_num+cam_num)):
 	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
 	log(target, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
 	time.sleep(1)
+
+current_alt = vehicle.location.global_relative_frame.alt
+
+while (current_alt >= 1):
+	current_alt = vehicle.location.global_relative_frame.alt
+	log(target, "Landing. Alt: %s" % current_alt
+	time.sleep(0.5)
