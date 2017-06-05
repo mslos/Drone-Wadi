@@ -14,9 +14,9 @@ class Command ():
         self.value = value
     def makeCommand (self):
         if self.value == "":
-            message = ":"+self.command+"0"+"\r\n" #Added space here
+            message = ":"+self.id+" "+self.command+"0"+"\r\n" #Added space here
         else:
-            message = ":"+self.command+" "+self.value+"\r\n"
+            message = ":"+self.id+" "++self.command+" "+self.value+"\r\n"
         return message
     def writeCommand (self):
         ser.write(self.makeCommand())
