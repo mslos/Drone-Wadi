@@ -335,11 +335,14 @@ def navigation():
     		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
     		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
     		time.sleep(0.5)
-    	log(target, "Arrived at camera. LOITER for 30 seonds.")
-    	#  This is how we change vehicle mode
+
+        #  Switch out of AUTO and into LOITER to downlaod data from camera trap
+    	log(target, "Arrived at camera.")
     	while (str(vehicle.mode.name) != "LOITER"):
     		vehicle.mode = VehicleMode("LOITER")
         camera_traps[nextwaypoint-2].Drone_Arrived = True
+
+        #  Start timer and monitor download progress before moving to next waypoint
         t_loiter = Timer()
         while ((camera_traps[nextwaypoint-2].Download_Complete == False) and (camera_traps[nextwaypoint-2].Timeout == False)):
             log(target, "Drone is waiting for data download.")
@@ -347,9 +350,12 @@ def navigation():
                 log(target, "Timeout event!")
                 camera_traps[nextwaypoint-2].Timeout = True
 
+        #  Switch out of LOITER and into AUTO to conitinue to next mission waypoint
     	log(target, "Moving to next waypoint.")
     	while (str(vehicle.mode.name) != "AUTO"):
     		vehicle.mode = VehicleMode("AUTO")
+
+        #  Update next waypoint
     	nextwaypoint = vehicle.commands.next
 
     ## RETURN TO HOME
@@ -368,14 +374,23 @@ def navigation():
     	time.sleep(0.5)
 
 ################  MAIN FUNCTIONS ################
-## PREPARE MISSION LOG FILE
-filename = "mission_raspi_log.txt"
-target = open(filename, 'w')
+if __name__ == "__main__":
+    ## PREPARE MISSION LOG FILE
+    filename = "mission_raspi_log.txt"
+    target = open(filename, 'w')
 
-## EXTRACT WAYPOINTS AND LANDING SEQUNCE
-camera_traps, landing_sequence = extract_waypoints()
+    ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
+    camera_traps, landing_sequence = extract_waypoints()
 
-navigation()
+    ## START MISSION THREADS
+    navigation_thread = threading.Thread(target=navigation, args=())
+    download_thread = threading.Thread(target=download_sequence, args=())
 
-for cam in camera_traps:
-    log(target, cam.summary())
+    navigation_thread.start()
+    download_thread.start()
+
+    navigation_thread.join()
+    download_thread.join()
+
+    for cam in camera_traps:
+        log(target, cam.summary())
