@@ -1,10 +1,10 @@
-__author__ = 'NYUAD'
-
 import serial
 import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 import time
+
+camera_ip_addr = ["12","13"]
 
 class Command ():
     def __init__(self,ID,command,value):
@@ -82,8 +82,11 @@ def downloadFiles(): #Transfers files from camera trap to drone.
 #            "rwx" is read, write, execute rights
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
-# Camera IP: 192.168.10.22
-    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.15:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
+    camera_trap_path = "/media/usbhdd/DCIM/"
+    usb_drive_path = "/media/pi/B037-6D1A"
+    rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)]":"+camera_trap_path+" "+usb_drive_path
+    copy_files = sp.call(rsync_command, shell=True)
+    print "downloadFiles: Rsync returned with code: "+str(copy_files)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
 
@@ -117,7 +120,7 @@ def RSET (value="0"):
 
 def download_sequence():
     for ID in ID_list:
-        os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
+        #os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
         ID = IDEN()[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
         POWR ("1")
@@ -126,7 +129,7 @@ def download_sequence():
         while state[0]["value"] != "000001":
             state = POWR("?")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
-        downloadFiles()
+        downloadFiles(ID)
         POWR ("0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
         state = POWR ("?")
@@ -134,7 +137,7 @@ def download_sequence():
         while state[0] ["value"] != "000000":
             state = POWR ("?")
         RSET()
-        os.system("sudo umount /dev/sda1") #unmounts USB
+        #os.system("sudo umount /dev/sda1") #unmounts USB
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
 
 ID_list = ["001", "002"]
