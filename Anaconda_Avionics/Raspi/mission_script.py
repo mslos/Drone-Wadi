@@ -162,9 +162,6 @@ def mode_callback(self, attr_name, msg):
 
 ## fn: GET CAMERA TRAP INFORMATION
 def extract_waypoints():
-    ## PREPARE MISSION LOG FILE
-    filename = "mission_raspi_log.txt"
-    target = open(filename, 'w')
 
     parser = argparse.ArgumentParser(description='Process some.')
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
