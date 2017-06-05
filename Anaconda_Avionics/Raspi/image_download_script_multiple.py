@@ -4,7 +4,6 @@ import serial
 import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
-ID_list = ["001", "002", "003"]
 import time
 
 class Command ():
@@ -116,23 +115,27 @@ def RSET (value="0"):
         return RSET()
     return responseMessage
 
-for ID in ID_list:
-    os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
-    ID = IDEN()[0]["ID"]
-    #os.system("sudo python /home/pi/Desktop/GreenLED.py")
-    POWR ("1")
-    #os.system("sudo python /home/pi/Desktop/BlueLED.py")
-    state = POWR ("?")
-    while state[0]["value"] != "000001":
-        state = POWR("?")
-    #os.system("sudo python /home/pi/Desktop/RedLED.py")
-    downloadFiles()
-    POWR ("0")
-    #os.system("sudo python /home/pi/Desktop/CyanLED.py")
-    state = POWR ("?")
-    print(state)
-    while state[0] ["value"] != "000000":
+def download_sequence():
+    for ID in ID_list:
+        os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
+        ID = IDEN()[0]["ID"]
+        #os.system("sudo python /home/pi/Desktop/GreenLED.py")
+        POWR ("1")
+        #os.system("sudo python /home/pi/Desktop/BlueLED.py")
         state = POWR ("?")
-    RSET()
-    os.system("sudo umount /dev/sda1") #unmounts USB
-    #os.system("sudo python /home/pi/Desktop/RedLED.py")
+        while state[0]["value"] != "000001":
+            state = POWR("?")
+        #os.system("sudo python /home/pi/Desktop/RedLED.py")
+        downloadFiles()
+        POWR ("0")
+        #os.system("sudo python /home/pi/Desktop/CyanLED.py")
+        state = POWR ("?")
+        print(state)
+        while state[0] ["value"] != "000000":
+            state = POWR ("?")
+        RSET()
+        os.system("sudo umount /dev/sda1") #unmounts USB
+        #os.system("sudo python /home/pi/Desktop/RedLED.py")
+
+ID_list = ["001", "002"]
+download_sequence()

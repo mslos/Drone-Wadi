@@ -96,7 +96,6 @@ def downloadFiles(): #Transfers files from camera trap to drone.
     copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.15:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
-
 def POWR (value):
     message = Command(ID,"POWR",value)
     message.writeCommand()
@@ -302,7 +301,6 @@ def navigation():
     		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
     		time.sleep(0.5)
     	log(target, "Arrived at camera. LOITER for 30 seonds.")
-    	#  This is how we change vehicle mode
     	while (str(vehicle.mode.name) != "LOITER"):
     		vehicle.mode = VehicleMode("LOITER")
     	time.sleep(30)
@@ -326,7 +324,7 @@ def navigation():
     	log(target, "Landing. Alt: %s" % current_alt)
     	time.sleep(0.5)
 
-def download_sequence():
+def download_sequence():miss
     for cam in camera_traps:
         ID = cam.ID
         os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
