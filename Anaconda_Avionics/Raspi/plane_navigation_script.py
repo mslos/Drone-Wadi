@@ -162,7 +162,7 @@ def navigation():
     print log(target, "Raspi is taking control of drone")
 
     ## UPLOAD FULL LOITER MISSION
-    set_full_loiter_mission(vehicle, camera_locations, landing_sequence)
+    set_full_loiter_mission(vehicle)
     vehicle.commands.next = 0
 
     ## WAIT FOR VEHICLE TO SWITCH TO AUTO
@@ -185,8 +185,8 @@ def navigation():
     nextwaypoint = vehicle.commands.next
     while (vehicle.commands.next <= cam_num+1):
     	while vehicle.commands.next == nextwaypoint:
-    		distance = get_distance_metres(camera_locations[nextwaypoint-2], vehicle.location.global_frame)
-    		# camera_locations is indexed at 0, and commands are indexed at 1
+    		distance = get_distance_metres(camera_traps[nextwaypoint-2].getLocationObject(), vehicle.location.global_frame)
+    		# camera_traps is indexed at 0, and commands are indexed at 1
     		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
     		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
     		time.sleep(0.5)
@@ -204,7 +204,7 @@ def navigation():
     #  At this point, it should begin going through the landing sequence points.
     log(target, "Starting Landing Sequence")
     while (vehicle.commands.next < (land_num+cam_num)):
-    	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
+    	distance = get_distance_metres(landing_sequence[nextwaypoint-1], vehicle.location.global_frame)
     	log(target, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
     	time.sleep(1)
 
@@ -222,8 +222,5 @@ target = open(filename, 'w')
 
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
 camera_traps, landing_sequence = extract_waypoints()
-camera_locations = []
-for cam in camera_traps:
-    camera_locations.append(cam.getLocationObject())
 
 navigation()
