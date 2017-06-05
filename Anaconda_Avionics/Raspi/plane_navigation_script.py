@@ -99,7 +99,7 @@ def get_distance_metres(aLocation1, aLocation2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(vehicle, camera_locations, landing_sequence):
+def set_full_loiter_mission(vehicle, camera_traps, landing_sequence):
     log(target, "Download mission")
     cmds = vehicle.commands
     cmds.download()
@@ -117,8 +117,8 @@ def set_full_loiter_mission(vehicle, camera_locations, landing_sequence):
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
     log(target, "Adding new waypoint commands.")
-    for i in range(len(camera_locations)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
+    for cam in camera_traps:
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, cam.latitude, cam.longitude, cam.altitude))
 
     #  Add landing sequence
     log(target, "Adding landing sequece")
@@ -173,7 +173,7 @@ def navigation():
     vehicle.add_attribute_listener('mode', mode_callback)
 
     ## MONITOR PROGRESS ON EACH CAMERA LOCATION
-    cam_num = len(camera_locations)
+    cam_num = len(camera_traps)
     land_num = len(landing_sequence)
 
     while (vehicle.commands.next == 1):
