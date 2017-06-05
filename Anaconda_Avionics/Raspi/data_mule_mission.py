@@ -1,5 +1,5 @@
 from plane_navigation_script0 import navigation
-from image)download_script_multiple import download_sequence
+from image_download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
 import threading
