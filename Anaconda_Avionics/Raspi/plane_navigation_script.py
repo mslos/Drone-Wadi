@@ -33,7 +33,7 @@ class Camera:
         retString += "    Timeout:           " + str(self.Timeout) + "\n"
         retString += "    Drone_Arrived:     " + str(self.Drone_Arrived) + "\n"
         retString += "    Download_Started:  " + str(self.Download_Started) + "\n"
-        retString += "    Download_Complete: " + str(self.Download_Complete) + "\n" + "\n"
+        retString += "    Download_Complete: " + str(self.Download_Complete) + "\n"
         return retString
 
 ## fn: Callback definition for mode observer
@@ -224,6 +224,6 @@ target = open(filename, 'w')
 camera_traps, landing_sequence = extract_waypoints()
 camera_locations = []
 for cam in camera_traps:
-    print cam.summary
+    print cam.summary()
 
-navigation()
+#navigation()
