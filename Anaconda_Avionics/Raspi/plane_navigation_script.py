@@ -118,6 +118,7 @@ def set_full_loiter_mission(vehicle, camera_traps, landing_sequence):
     #  AUTO and back into AUTO.
     log(target, "Adding new waypoint commands.")
     for cam in camera_traps:
+        print cam
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, cam.latitude, cam.longitude, cam.altitude))
 
     #  Add landing sequence
