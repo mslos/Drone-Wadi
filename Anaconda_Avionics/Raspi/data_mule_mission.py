@@ -70,8 +70,6 @@ def extract_waypoints(target):
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
             log(target, "Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
 
-    target.close()
-
     return camera_traps, camera_locations, landing_waypoints
 
 ###############################################################################
