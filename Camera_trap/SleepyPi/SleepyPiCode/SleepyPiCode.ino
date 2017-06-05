@@ -45,6 +45,7 @@ void loop() {
   char	theChar;
   command = ""; //reset command
   value= ""; //reset value of command
+  iden="";
   if (xBeeSerial.available()) {
     theChar=xBeeSerial.read();
     reader(start, parse, dataInputBuffer, theChar);
@@ -120,9 +121,8 @@ void parser (String &iden, String &command, String &value, char dataInputBuffer[
     if (x<4){ //Parse ID
       iden = iden+dataInputBuffer[x];
     }
-    else if (x<9){ //Parse command
-      if(dataInputBuffer[x]!=' ')
-        command = command+dataInputBuffer[x];
+    else if (x<9 && x>4){ //Parse command
+      command = command+dataInputBuffer[x];
     }
     else if ((dataInputBuffer[x]!=' ')){ //preprocess value
       valueBuffer[valueIndex]=dataInputBuffer[x];
@@ -161,7 +161,7 @@ void reader (bool &start, bool &parse, char dataInputBuffer[], char theChar){
     }
     dataIndex=0;
     start = false;
-    Serial.println("Reader: ")
+    Serial.println("Reader: ");
   }
   else if (theChar >= 0x20 && start){
     dataInputBuffer[dataIndex]=theChar;
@@ -174,8 +174,8 @@ void resetCamera() {
   if (pi_running == true){
     shutPi();
   }
-  masterOff();
-  masterOn();
+  //masterOff();
+  //masterOn();
   Serial.print("Reset Camera");
 }
 
