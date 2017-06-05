@@ -224,6 +224,6 @@ target = open(filename, 'w')
 camera_traps, landing_sequence = extract_waypoints()
 camera_locations = []
 for cam in camera_traps:
-    camera_locations.append(cam.getLocationObject)
+    print cam.summary
 
 navigation()
