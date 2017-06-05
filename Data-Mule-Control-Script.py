@@ -4,7 +4,7 @@ import serial
 import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
-ID = "001"
+ID = "002"
 import time
 
 class Command ():
@@ -43,10 +43,13 @@ class Response():
                         message += i[c]
                 notGarbage.append(message)
         return notGarbage
+
+# TODO: Checksum
 #    def checkSum(self):
 #        message = self.excludeGarbage()
 #        for i in message:
 #            if len(i)!=
+
     def readMessage(self):
         messageDictList = []
         messages = self.excludeGarbage()
@@ -84,7 +87,9 @@ def downloadFiles(): #Transfers files from camera trap to drone.
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
 # Camera IP: 192.168.10.22
-    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.15:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
+    camera_trap_path = "/media/usbhdd/DCIM/"
+    usb_drive_path = "/media/pi/B037-6D1A"
+    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.13:"+camera_trap_path+" "+usb_drive_path, shell=True)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
 
@@ -133,5 +138,5 @@ print(state)
 while state[0] ["value"] != "000000":
     state = POWR ("?")
 RSET()
-os.system("sudo umount /dev/sda1") #unmounts USB
+#os.system("sudo umount /dev/sda1") #unmounts USB
 #os.system("sudo python /home/pi/Desktop/RedLED.py")
