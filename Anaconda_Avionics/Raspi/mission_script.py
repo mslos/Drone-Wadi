@@ -13,7 +13,7 @@ import sys
 import os
 import serial
 import subprocess as sp
-import time
+import threading
 
 class Command ():
     def __init__(self,ID,command,value):
@@ -95,6 +95,7 @@ def downloadFiles(): #Transfers files from camera trap to drone.
     copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.15:/media/usbhdd/DCIM/ /media/usbhddDrone", shell=True)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
+
 def POWR (value):
     message = Command(ID,"POWR",value)
     message.writeCommand()
@@ -123,6 +124,7 @@ def RSET (value="0"):
         return RSET()
     return responseMessage
 
+
 class Camera:
     def __init__(self, longitude, latitude, altitude, ID):
         self.longitude = longitude
@@ -139,11 +141,11 @@ class Camera:
 
     def summary(self):
         retString = "Camera ID: " + self.ID + "\n"
-        retString += "    Lat: " + str(self.latitude) + " Lon: " + str(self.longitude) + " Alt: " + str(self.altitude) + "\n"
+        retString += "    Lon: " + str(self.longitude) + " Lat: " + str(self.latitude) + " Alt: " + str(self.altitude) + "\n"
         retString += "    Timeout:           " + str(self.Timeout) + "\n"
         retString += "    Drone_Arrived:     " + str(self.Drone_Arrived) + "\n"
         retString += "    Download_Started:  " + str(self.Download_Started) + "\n"
-        retString += "    Download_Complete: " + str(self.Download_Complete) + "\n" + "\n"
+        retString += "    Download_Complete: " + str(self.Download_Complete) + "\n"
         return retString
 
 ## fn: Callback definition for mode observer
@@ -209,7 +211,7 @@ def get_distance_metres(aLocation1, aLocation2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(camera_locations, landing_sequence):
+def set_full_loiter_mission(vehicle):
     log(target, "Download mission")
     cmds = vehicle.commands
     cmds.download()
@@ -227,8 +229,9 @@ def set_full_loiter_mission(camera_locations, landing_sequence):
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
     log(target, "Adding new waypoint commands.")
-    for i in range(len(camera_locations)):
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, camera_locations[i].lat, camera_locations[i].lon, int(camera_locations[i].alt)))
+    for cam in camera_traps:
+        print cam
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, cam.longitude, cam.latitude, cam.altitude))
 
     #  Add landing sequence
     log(target, "Adding landing sequece")
@@ -256,78 +259,22 @@ def log(target_file, message):
 	target_file.write(message)
 	target_file.write('\n')
 
+## TIMER OBJECT
+class Timer():
+    def __init__():
+        self.start = time.time()
+    def start():
+        self.start = time.time()
+    def timeElapsed():
+        return (self.start - time.time())
+
 ################  MAIN FUNCTIONS ################
-
-def navigation():
-    ## CONNECT TO VEHICLE
-    connection_string = "/dev/ttyS0"
-    print 'Connecting to vehicle on: %s' % connection_string
-    vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
-
-    ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
-    while str(vehicle.mode.name) != "GUIDED":
-    	log(target, "Waiting for user to initiate mission")
-    	time.sleep(0.5)
-    print log(target, "Raspi is taking control of drone")
-
-    ## UPLOAD FULL LOITER MISSION
-    set_full_loiter_mission(camera_locations, landing_sequence)
-    vehicle.commands.next = 0
-
-    ## WAIT FOR VEHICLE TO SWITCH TO AUTO
-    while str(vehicle.mode.name) != "AUTO":
-        log(target, "Waiting for user to begin mission")
-        time.sleep(1)
-
-    ## ADD MODE CHANGE LISTENER
-    vehicle.add_attribute_listener('mode', mode_callback)
-
-    ## MONITOR PROGRESS ON EACH CAMERA LOCATION
-    cam_num = len(camera_locations)
-    land_num = len(landing_sequence)
-
-    while (vehicle.commands.next == 1):
-    	current_alt = vehicle.location.global_relative_frame.alt
-    	log(target, "Taking off. Alt: %s" % current_alt)
-    	time.sleep(0.5)
-
-    nextwaypoint = vehicle.commands.next
-    while (vehicle.commands.next <= cam_num+1):
-    	while vehicle.commands.next == nextwaypoint:
-    		distance = get_distance_metres(camera_locations[nextwaypoint-2], vehicle.location.global_frame)
-    		# camera_locations is indexed at 0, and commands are indexed at 1
-    		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
-    		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
-    		time.sleep(0.5)
-    	log(target, "Arrived at camera. LOITER for 30 seonds.")
-    	while (str(vehicle.mode.name) != "LOITER"):
-    		vehicle.mode = VehicleMode("LOITER")
-    	time.sleep(30)
-    	log(target, "Download complete. Continue mission")
-    	while (str(vehicle.mode.name) != "AUTO"):
-    		vehicle.mode = VehicleMode("AUTO")
-    	nextwaypoint = vehicle.commands.next
-
-    ## RETURN TO HOME
-    #  At this point, it should begin going through the landing sequence points.
-    log(target, "Starting Landing Sequence")
-    while (vehicle.commands.next < (land_num+cam_num)):
-    	distance = get_distance_metres(camera_locations[nextwaypoint-1], vehicle.location.global_frame)
-    	log(target, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
-    	time.sleep(1)
-
-    current_alt = vehicle.location.global_relative_frame.alt
-
-    while (current_alt >= 0.5):
-    	current_alt = vehicle.location.global_relative_frame.alt
-    	log(target, "Landing. Alt: %s" % current_alt)
-    	time.sleep(0.5)
-
 def download_sequence():
     ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
     for cam in camera_traps:
         ID = cam.ID
         os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
+
         ID = IDEN()[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
         POWR ("1")
@@ -347,6 +294,78 @@ def download_sequence():
         os.system("sudo umount /dev/sda1") #unmounts USB
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
 
+def navigation():
+    ## CONNECT TO VEHICLE
+    connection_string = "/dev/ttyS0"
+    print 'Connecting to vehicle on: %s' % connection_string
+    vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
+
+    ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
+    while str(vehicle.mode.name) != "GUIDED":
+    	log(target, "Waiting for user to initiate mission")
+    	time.sleep(0.5)
+    print log(target, "Raspi is taking control of drone")
+
+    ## UPLOAD FULL LOITER MISSION
+    set_full_loiter_mission(vehicle)
+    vehicle.commands.next = 0
+
+    ## WAIT FOR VEHICLE TO SWITCH TO AUTO
+    while str(vehicle.mode.name) != "AUTO":
+        log(target, "Waiting for user to begin mission")
+        time.sleep(1)
+
+    ## ADD MODE CHANGE LISTENER
+    vehicle.add_attribute_listener('mode', mode_callback)
+
+    ## MONITOR PROGRESS ON EACH CAMERA LOCATION
+    cam_num = len(camera_traps)
+    land_num = len(landing_sequence)
+
+    while (vehicle.commands.next == 1):
+    	current_alt = vehicle.location.global_relative_frame.alt
+    	log(target, "Taking off. Alt: %s" % current_alt)
+    	time.sleep(0.5)
+
+    nextwaypoint = vehicle.commands.next
+    while (vehicle.commands.next <= cam_num+1):
+    	while vehicle.commands.next == nextwaypoint:
+    		distance = get_distance_metres(camera_traps[nextwaypoint-2].getLocationObject(), vehicle.location.global_frame)
+    		# camera_traps is indexed at 0, and commands are indexed at 1
+    		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
+    		log(target, "Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
+    		time.sleep(0.5)
+    	log(target, "Arrived at camera. LOITER for 30 seonds.")
+    	#  This is how we change vehicle mode
+    	while (str(vehicle.mode.name) != "LOITER"):
+    		vehicle.mode = VehicleMode("LOITER")
+        camera_traps[nextwaypoint-2].Drone_Arrived = True
+        t_loiter = Timer()
+        while ((camera_traps[nextwaypoint-2].Download_Complete == False) and (camera_traps[nextwaypoint-2].Timeout == False)):
+            log(target, "Drone is waiting for data download.")
+            if (t_loiter.timeElapsed() >= 240): # 4 minute Timeout
+                log(target, "Timeout event!")
+                camera_traps[nextwaypoint-2].Timeout = True
+
+    	log(target, "Moving to next waypoint.")
+    	while (str(vehicle.mode.name) != "AUTO"):
+    		vehicle.mode = VehicleMode("AUTO")
+    	nextwaypoint = vehicle.commands.next
+
+    ## RETURN TO HOME
+    #  At this point, it should begin going through the landing sequence points.
+    log(target, "Starting Landing Sequence")
+    while (vehicle.commands.next < (land_num+cam_num)):
+    	distance = get_distance_metres(landing_sequence[nextwaypoint-1], vehicle.location.global_frame)
+    	log(target, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
+    	time.sleep(1)
+
+    current_alt = vehicle.location.global_relative_frame.alt
+
+    while (current_alt >= 0.5):
+    	current_alt = vehicle.location.global_relative_frame.alt
+    	log(target, "Landing. Alt: %s" % current_alt)
+    	time.sleep(0.5)
 
 ################  MAIN FUNCTIONS ################
 ## PREPARE MISSION LOG FILE
@@ -355,8 +374,8 @@ target = open(filename, 'w')
 
 ## EXTRACT WAYPOINTS AND LANDING SEQUNCE
 camera_traps, landing_sequence = extract_waypoints()
-camera_locations = []
-for cam in camera_traps:
-    camera_locations.append(cam.getLocationObject)
 
 navigation()
+
+for cam in camera_traps:
+    log(target, cam.summary())
