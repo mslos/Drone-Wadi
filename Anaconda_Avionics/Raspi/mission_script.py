@@ -324,7 +324,7 @@ def navigation():
     	log(target, "Landing. Alt: %s" % current_alt)
     	time.sleep(0.5)
 
-def download_sequence():miss
+def download_sequence():
     for cam in camera_traps:
         ID = cam.ID
         os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
