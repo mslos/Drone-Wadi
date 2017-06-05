@@ -34,10 +34,7 @@ class Camera:
         return retString
 
 ## fn: GET CAMERA TRAP INFORMATION
-def extract_waypoints():
-    ## PREPARE MISSION LOG FILE
-    filename = "mission_raspi_log.txt"
-    target = open(filename, 'w')
+def extract_waypoints(target):
 
     parser = argparse.ArgumentParser(description='Process some.')
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
@@ -79,10 +76,15 @@ def extract_waypoints():
 
 ###############################################################################
 
-camera_traps, camera_locations, landing_waypoints = extract_waypoints()
+## PREPARE MISSION LOG FILE
+filename = "mission_raspi_log.txt"
+target = open(filename, 'w')
+
+##
+camera_traps, camera_locations, landing_waypoints = extract_waypoints(target)
 q = Queue()
 q.put(camera_traps)
 
-navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,))
+navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
 
 navigation_thread.start()

@@ -40,7 +40,7 @@ def get_distance_metres(aLocation1, aLocation2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(vehicle, camera_locations, landing_sequence):
+def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, target):
     log(target, "Download mission")
     cmds = vehicle.commands
     cmds.download()
@@ -99,10 +99,7 @@ class Timer():
 
 ################  MAIN FUNCTIONS ################
 
-def navigation(q, camera_locations, landing_sequence):
-    ## PREPARE MISSION LOG FILE
-    filename = "mission_raspi_log.txt"
-    target = open(filename, 'w')
+def navigation(q, camera_locations, landing_sequence, target):
 
     ## CONNECT TO VEHICLE
     connection_string = "/dev/ttyS0"
@@ -116,7 +113,7 @@ def navigation(q, camera_locations, landing_sequence):
     print log(target, "Raspi is taking control of drone")
 
     ## UPLOAD FULL LOITER MISSION
-    set_full_loiter_mission(vehicle, camera_locations, landing_sequence)
+    set_full_loiter_mission(vehicle, camera_locations, landing_sequence, target)
     vehicle.commands.next = 0
 
     ## WAIT FOR VEHICLE TO SWITCH TO AUTO
