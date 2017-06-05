@@ -84,8 +84,8 @@ def downloadFiles(ID): #Transfers files from camera trap to drone.
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
     camera_trap_path = "/media/usbhdd/DCIM/"
-    usb_drive_path = "/media/pi/B037-6D1A"
-    rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)]+":"+camera_trap_path+" "+usb_drive_path
+    usb_drive_path = "/media/pi/B037-6D1A/"+str(ID)
+    rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)-1]+":"+camera_trap_path+" "+usb_drive_path
     copy_files = sp.call(rsync_command, shell=True)
     print "downloadFiles: Rsync returned with code: "+str(copy_files)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
