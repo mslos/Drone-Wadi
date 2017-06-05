@@ -72,7 +72,7 @@ class Response():
         else:
             return None
 
-def downloadFiles(): #Transfers files from camera trap to drone.
+def downloadFiles(ID): #Transfers files from camera trap to drone.
 # Rsync Arguments:
 #   -a       is equivalent to -rlptgoD, preserves everything recursion enabled
 #   -v       verbose
@@ -84,13 +84,13 @@ def downloadFiles(): #Transfers files from camera trap to drone.
 #            exists and has a date later than the source file.
     camera_trap_path = "/media/usbhdd/DCIM/"
     usb_drive_path = "/media/pi/B037-6D1A"
-    rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)]":"+camera_trap_path+" "+usb_drive_path
+    rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)]+":"+camera_trap_path+" "+usb_drive_path
     copy_files = sp.call(rsync_command, shell=True)
     print "downloadFiles: Rsync returned with code: "+str(copy_files)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
 
-def POWR (value):
+def POWR (ID, value):
     message = Command(ID,"POWR",value)
     message.writeCommand()
     response = Response(ID,"POWR",value)
@@ -100,7 +100,7 @@ def POWR (value):
         return POWR(value)
     return responseMessage
 
-def IDEN (value="0"):
+def IDEN (ID, value="0"):
     message = Command(ID,"IDEN",value)
     message.writeCommand()
     response = Response(ID,"IDEN",value)
@@ -109,7 +109,7 @@ def IDEN (value="0"):
         return IDEN()
     return responseMessage
 
-def RSET (value="0"):
+def RSET (ID, value="0"):
     message = Command(ID,"RSET",value)
     message.writeCommand()
     response = Response(ID,"RSET",value)
@@ -121,22 +121,22 @@ def RSET (value="0"):
 def download_sequence():
     for ID in ID_list:
         #os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
-        ID = IDEN()[0]["ID"]
+        ID = IDEN(ID)[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
-        POWR ("1")
+        POWR (ID,"1")
         #os.system("sudo python /home/pi/Desktop/BlueLED.py")
-        state = POWR ("?")
+        state = POWR (ID,"?")
         while state[0]["value"] != "000001":
-            state = POWR("?")
+            state = POWR(ID,"?")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         downloadFiles(ID)
-        POWR ("0")
+        POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
-        state = POWR ("?")
+        state = POWR (ID,"?")
         print(state)
         while state[0] ["value"] != "000000":
-            state = POWR ("?")
-        RSET()
+            state = POWR (ID,"?")
+        RSET(ID)
         #os.system("sudo umount /dev/sda1") #unmounts USB
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
 
