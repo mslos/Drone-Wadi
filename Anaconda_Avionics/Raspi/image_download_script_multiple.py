@@ -13,9 +13,9 @@ class Command ():
         self.value = value
     def makeCommand (self):
         if self.value == "":
-            message = ":"+self.command+"0"+"\r\n" #Added space here
+            message = ":"+self.id+" "+self.command+"0"+"\r\n" #Added space here
         else:
-            message = ":"+self.command+" "+self.value+"\r\n"
+            message = ":"+self.id+" "+self.command+" "+self.value+"\r\n"
         return message
     def writeCommand (self):
         ser.write(self.makeCommand())
@@ -29,6 +29,7 @@ class Response():
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
+        print "Raw message is " + str(returnMessage)
         for i in returnMessage:
             if "%" in i:
                 message = ""
@@ -97,7 +98,7 @@ def POWR (ID, value):
     responseMessage = response.realResponse()
     if responseMessage == "retry":
         ser.readlines()
-        return POWR(value)
+        return POWR(ID,value)
     return responseMessage
 
 def IDEN (ID, value="0"):
@@ -106,7 +107,7 @@ def IDEN (ID, value="0"):
     response = Response(ID,"IDEN",value)
     responseMessage = response.realResponse()
     if responseMessage == "retry":
-        return IDEN()
+        return IDEN(ID)
     return responseMessage
 
 def RSET (ID, value="0"):
@@ -115,7 +116,7 @@ def RSET (ID, value="0"):
     response = Response(ID,"RSET",value)
     responseMessage = response.realResponse()
     if responseMessage == "retry":
-        return RSET()
+        return RSET(ID)
     return responseMessage
 
 def download_sequence():

@@ -14,9 +14,9 @@ class Command ():
         self.value = value
     def makeCommand (self):
         if self.value == "":
-            message = ":"+self.command+"0"+"\r\n" #Added space here
+            message = ":"+self.id+" "+self.command+"0"+"\r\n" #Added space here
         else:
-            message = ":"+self.command+" "+self.value+"\r\n"
+            message = ":"+self.id+" "+self.command+" "+self.value+"\r\n"
         return message
     def writeCommand (self):
         ser.write(self.makeCommand())
@@ -30,7 +30,8 @@ class Response():
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
-        for i in returnMessage:
+        print "Raw message is " + str(returnMessage)
+	    for i in returnMessage:
             if "%" in i:
                 message = ""
                 read = False
@@ -60,7 +61,7 @@ class Response():
             messageDict ["command"] = messageList [1]
             messageDict ["value"] = messageList [2]
             messageDictList.append(messageDict)
-        return messageDictList
+	return messageDictList
     def checkEcho(self): #Check if the response matches the commmand
         messageDictList = self.readMessage()
         print(messageDictList)

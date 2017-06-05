@@ -8,7 +8,7 @@
 int green = 6;
 int yellow = 5;
 
-SoftwareSerial mySerial(9, 10); // RX, TX
+SoftwareSerial xBeeSerial(9, 10); // Serial for Xbee RX, TX
 
 int dataIndex = 0;
 char dataInputBuffer[32];
@@ -20,20 +20,21 @@ bool readCommand;
 String command;
 int stringLength;
 String value;
+String iden;
 bool pi_running;
 void setup() {
   // Turn the Serial Protocol ON
-  Serial.begin(9600);
+  Serial.begin(9600); //Serial communication to RasPi
   while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
+    ; // wait for serial port to connect. Just in case
   }
   Serial.println("Start..");
   delay(50);
   readCommand = false;
   start = false;
   parse = false;
-  mySerial.begin(9600);
-  mySerial.println("Hello, world?");
+  xBeeSerial.begin(9600);
+  xBeeSerial.println("Hello, world?");
   SleepyPi.enablePiPower(true);
   pinMode(green, OUTPUT);
   pinMode(yellow, OUTPUT);
@@ -43,18 +44,19 @@ void loop() {
   SleepyPi.enableExtPower(true);
   char	theChar;
   command = ""; //reset command
-  value=""; //reset value of command
-  if (mySerial.available()){
-    theChar=mySerial.read();
+  value= ""; //reset value of command
+  iden="";
+  if (xBeeSerial.available()) {
+    theChar=xBeeSerial.read();
     reader(start, parse, dataInputBuffer, theChar);
     if (parse){
-      parser(command,value,dataInputBuffer,dataIndex);
+      parser(iden,command,value,dataInputBuffer,dataIndex);
       parse = false;
       readCommand = true;
     }
   }
-  if (readCommand){
-    mySerial.print("%"+ID+" "+command+" "+value+'\r'+'\n');
+  if (readCommand && (iden == ID)){
+    xBeeSerial.print("%"+ID+" "+command+" "+value+'\r'+'\n');
     if (command == "POWR"){
       if (value == "00000?"){
         pi_running = SleepyPi.checkPiStatus(false);
@@ -64,7 +66,7 @@ void loop() {
         else{
           value = "000000";
         }
-        mySerial.print("%"+ID+" "+command+" "+value+'\r'+'\n');
+        xBeeSerial.print("%"+ID+" "+command+" "+value+'\r'+'\n');
       }
       if (value == "000001"){
         startPi ();
@@ -77,12 +79,13 @@ void loop() {
       resetCamera();
     }
     if (command == "IDEN"){
-      mySerial.print("%"+ID+" "+command+" 000"+ID+'\r'+'\n');
+      xBeeSerial.print("%"+ID+" "+command+" 000"+ID+'\r'+'\n');
     }
     readCommand = false;
   }
+  //reads from serial input and sends it via Xbee
   if (Serial.available()){
-    mySerial.write(Serial.read());
+    xBeeSerial.write(Serial.read());
   }
 
 }
@@ -108,36 +111,44 @@ void shutPi (){
     Serial.println("SHDN PI");
   }
 }
-//parser function. Parse the data buffer into command and value
-void parser (String &command, String &value, char dataInputBuffer[], int stringLenth){
-  char valueBuffer[6] = {};
+
+//Parser function: Parse the data buffer into command, ID (TODO) and value
+void parser (String &iden, String &command, String &value, char dataInputBuffer[], int stringLenth){
+  char valueBuffer[6] = {}; //max size of value is 6 bytes
   int valueIndex = 0;
+
   for (int x =1; x<= stringLength; x++){
-    if (x<5){
-      command= command+dataInputBuffer[x];
+    if (x<4){ //Parse ID
+      iden = iden+dataInputBuffer[x];
     }
-    else if ((dataInputBuffer[x]!=' ')){
+    else if (x<9 && x>4){ //Parse command
+      command = command+dataInputBuffer[x];
+    }
+    else if ((dataInputBuffer[x]!=' ')){ //preprocess value
       valueBuffer[valueIndex]=dataInputBuffer[x];
       valueIndex++;
     }
-
   }
   Serial.println(valueBuffer);
   Serial.println(dataInputBuffer);
   for (int c=0; c<=5; c++){
-
-    if (valueBuffer[c]){
+    if (valueBuffer[c]){ //parse value
       value = value + valueBuffer[c];
     }
-    else{
+    else{ //prepend 0 to value for every NULL in valueBuffer
       value = '0'+value;
     }
     Serial.println(value);
   }
-  Serial.println (value);
+  Serial.print("Parser: Command is ");
+  Serial.println(command);
+  Serial.print("Parser: Value is ");
+  Serial.println(value);
+  Serial.print("Parser: ID is ");
+  Serial.println(iden);
 }
 
-//reader function. Starts appending messages to a data buffer when ':' appears
+//Reader function: Starts appending incoming characters to a data buffer when ':' appears
 void reader (bool &start, bool &parse, char dataInputBuffer[], char theChar){
   if (theChar == ':'){ //start reading the string if the incoming byte is ":"
     dataIndex = 0;
@@ -150,6 +161,7 @@ void reader (bool &start, bool &parse, char dataInputBuffer[], char theChar){
     }
     dataIndex=0;
     start = false;
+    Serial.println("Reader: ");
   }
   else if (theChar >= 0x20 && start){
     dataInputBuffer[dataIndex]=theChar;
@@ -162,8 +174,8 @@ void resetCamera() {
   if (pi_running == true){
     shutPi();
   }
-  masterOff();
-  masterOn();
+  //masterOff();
+  //masterOn();
   Serial.print("Reset Camera");
 }
 
