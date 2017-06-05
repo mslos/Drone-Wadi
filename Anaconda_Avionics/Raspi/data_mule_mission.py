@@ -56,7 +56,7 @@ def extract_waypoints(target):
     #  Make list of LocationGlobal Objects for camera traps
     camera_locations = []
     for cam in camera_traps:
-        camera_locations.append(cam.getLocationObject)
+        camera_locations.append(cam.getLocationObject())
 
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     log(target, "Reading Landing Sequence")
@@ -82,6 +82,8 @@ target = open(filename, 'w')
 camera_traps, camera_locations, landing_waypoints = extract_waypoints(target)
 q = Queue()
 q.put(camera_traps)
+
+
 
 navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
 
