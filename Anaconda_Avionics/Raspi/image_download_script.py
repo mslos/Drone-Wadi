@@ -4,7 +4,7 @@ import serial
 import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
-ID = "002"
+ID = "001"
 import time
 
 class Command ():
@@ -16,7 +16,7 @@ class Command ():
         if self.value == "":
             message = ":"+self.id+" "+self.command+"0"+"\r\n" #Added space here
         else:
-            message = ":"+self.id+" "++self.command+" "+self.value+"\r\n"
+            message = ":"+self.id+" "+self.command+" "+self.value+"\r\n"
         return message
     def writeCommand (self):
         ser.write(self.makeCommand())
@@ -30,7 +30,8 @@ class Response():
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
-        for i in returnMessage:
+        print "Raw message is " + str(returnMessage)
+	for i in returnMessage:
             if "%" in i:
                 message = ""
                 read = False
@@ -53,6 +54,7 @@ class Response():
     def readMessage(self):
         messageDictList = []
         messages = self.excludeGarbage()
+	print "Messages is "+str(messages)
         for i in messages:
             messageList = i.replace("%","").split(" ")
             messageDict = {}
@@ -60,7 +62,7 @@ class Response():
             messageDict ["command"] = messageList [1]
             messageDict ["value"] = messageList [2]
             messageDictList.append(messageDict)
-        return messageDictList
+	return messageDictList
     def checkEcho(self): #Check if the response matches the commmand
         messageDictList = self.readMessage()
         print(messageDictList)
@@ -89,7 +91,7 @@ def downloadFiles(): #Transfers files from camera trap to drone.
 # Camera IP: 192.168.10.22
     camera_trap_path = "/media/usbhdd/DCIM/"
     usb_drive_path = "/media/pi/B037-6D1A"
-    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.13:"+camera_trap_path+" "+usb_drive_path, shell=True)
+    copy_files = sp.call("rsync -avP --chmod=a=rwX --update pi@192.168.42.12:"+camera_trap_path+" "+usb_drive_path, shell=True)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
 

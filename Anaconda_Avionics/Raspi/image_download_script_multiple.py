@@ -97,7 +97,7 @@ def POWR (ID, value):
     responseMessage = response.realResponse()
     if responseMessage == "retry":
         ser.readlines()
-        return POWR(value)
+        return POWR(ID,value)
     return responseMessage
 
 def IDEN (ID, value="0"):
@@ -106,7 +106,7 @@ def IDEN (ID, value="0"):
     response = Response(ID,"IDEN",value)
     responseMessage = response.realResponse()
     if responseMessage == "retry":
-        return IDEN()
+        return IDEN(ID)
     return responseMessage
 
 def RSET (ID, value="0"):
@@ -115,7 +115,7 @@ def RSET (ID, value="0"):
     response = Response(ID,"RSET",value)
     responseMessage = response.realResponse()
     if responseMessage == "retry":
-        return RSET()
+        return RSET(ID)
     return responseMessage
 
 def download_sequence():
