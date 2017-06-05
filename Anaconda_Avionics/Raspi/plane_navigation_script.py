@@ -99,7 +99,7 @@ def get_distance_metres(aLocation1, aLocation2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(vehicle, camera_traps, landing_sequence):
+def set_full_loiter_mission(vehicle):
     log(target, "Download mission")
     cmds = vehicle.commands
     cmds.download()
