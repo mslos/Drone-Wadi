@@ -3,6 +3,7 @@ import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 import time
+from Queue import Queue
 
 camera_ip_addr = ["12","13"]
 
@@ -119,7 +120,8 @@ def RSET (ID, value="0"):
         return RSET(ID)
     return responseMessage
 
-def download_sequence():
+def download_sequence(q, ID_list):
+    counter = 0
     for ID in ID_list:
         #os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
         ID = IDEN(ID)[0]["ID"]
@@ -130,7 +132,22 @@ def download_sequence():
         while state[0]["value"] != "000001":
             state = POWR(ID,"?")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
+        while True:
+            cameras = q.get()
+            if (cameras =! None):
+                cameras[counter]["Download_Started"] == True
+                q.put(cameras)
+                break
+
         downloadFiles(ID)
+
+        while True:
+            cameras = q.get()
+            if (cameras =! None):
+                cameras[counter]["Download_Complete"] == True
+                q.put(cameras)
+                break
+
         POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
         state = POWR (ID,"?")
@@ -138,6 +155,7 @@ def download_sequence():
         while state[0] ["value"] != "000000":
             state = POWR (ID,"?")
         RSET(ID)
+        counter += 1
         #os.system("sudo umount /dev/sda1") #unmounts USB
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
 

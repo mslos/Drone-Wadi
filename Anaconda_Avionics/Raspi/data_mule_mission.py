@@ -1,4 +1,5 @@
 from plane_navigation_script0 import navigation
+from image)download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
 import threading
@@ -53,10 +54,12 @@ def extract_waypoints(target):
             log(target, new_camera.summary())
             camera_traps.append(new_camera)
 
-    #  Make list of LocationGlobal Objects for camera traps
+    #  Make list of LocationGlobal Objects for camera traps and Camera IDs
     camera_locations = []
+    camera_IDs = []
     for cam in camera_traps:
         camera_locations.append(cam.getLocationObject())
+        camera_IDs.append(cam.ID)
 
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     log(target, "Reading Landing Sequence")
@@ -70,7 +73,7 @@ def extract_waypoints(target):
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
             log(target, "Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
 
-    return camera_traps, camera_locations, landing_waypoints
+    return camera_traps, camera_locations, landing_waypoints, camera_IDs
 
 ###############################################################################
 
@@ -79,12 +82,22 @@ filename = "mission_raspi_log.txt"
 target = open(filename, 'w')
 
 ##
-camera_traps, camera_locations, landing_waypoints = extract_waypoints(target)
+camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(target)
 q = Queue()
 q.put(camera_traps)
 
+#navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
+download_thread = threading.Thread(target=download_sequence, args=(1, camera_IDs,))
 
+#navigation_thread.start()
+download_thread.start()
 
-navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
+#navigation_thread.join()
+download_thread.join()
 
-navigation_thread.start()
+camera_traps = q.get()
+
+for camera in camera_traps:
+    log(target, camera.summary())
+
+target.close()
