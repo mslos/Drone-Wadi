@@ -13,7 +13,6 @@ import sys
 import os
 import serial
 import subprocess as sp
-ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 import time
 
 class Command ():
@@ -325,6 +324,7 @@ def navigation():
     	time.sleep(0.5)
 
 def download_sequence():
+    ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
     for cam in camera_traps:
         ID = cam.ID
         os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
