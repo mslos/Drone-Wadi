@@ -148,7 +148,7 @@ def navigation(q, camera_locations, landing_sequence, target):
 
         #  Toggle Drone_Arrived parameter of camera
         while True:
-            cameras = g.get()
+            cameras = q.get()
             if (cameras != None):
                 cameras[nextwaypoint-2].Drone_Arrived == True
                 q.put(cameras)
@@ -158,7 +158,7 @@ def navigation(q, camera_locations, landing_sequence, target):
         timer = Timer()
         exit_loop = False
         while True:
-            cameras = g.get()
+            cameras = q.get()
             if (cameras != None):
                 if (timer.timeElapsed() > 240):
                     cameras[nextwaypoint-2].Timeout = True
@@ -167,7 +167,7 @@ def navigation(q, camera_locations, landing_sequence, target):
                     time.sleep(1)
                 else:
                     exit_loop = True
-                g.put(cameras)
+                q.put(cameras)
             if exit_loop:
                 break
     	log(target, "Continuing mission")
