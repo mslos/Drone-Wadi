@@ -160,5 +160,6 @@ def download_sequence(q, ID_list):
         #os.system("sudo umount /dev/sda1") #unmounts USB
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
 
-ID_list = ["001", "002"]
-download_sequence()
+if __name__ == "__main__":
+    ID_list = ["001", "002"]
+    download_sequence()
