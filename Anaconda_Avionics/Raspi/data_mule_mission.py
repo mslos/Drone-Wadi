@@ -87,7 +87,7 @@ q = Queue()
 q.put(camera_traps)
 
 #navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
-download_thread = threading.Thread(target=download_sequence, args=(1, camera_IDs,))
+download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs,))
 
 #navigation_thread.start()
 download_thread.start()

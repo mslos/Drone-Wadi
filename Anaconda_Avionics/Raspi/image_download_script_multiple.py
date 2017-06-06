@@ -26,7 +26,7 @@ class Response():
         self.rawMessage = ser.readlines()
         self.id = ID
         self.command = command
-        self.value = value
+        self.value = valuea
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
@@ -154,6 +154,7 @@ def download_sequence(q, ID_list):
         print(state)
         while state[0] ["value"] != "000000":
             state = POWR (ID,"?")
+
         RSET(ID)
         counter += 1
         #os.system("sudo umount /dev/sda1") #unmounts USB
