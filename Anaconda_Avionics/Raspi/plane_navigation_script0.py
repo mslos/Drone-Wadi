@@ -150,7 +150,7 @@ def navigation(q, camera_locations, landing_sequence, target):
         while True:
             cameras = g.get()
             if (cameras != None):
-                cameras[nextwaypoint-2]["Drone_Arrived"] == True
+                cameras[nextwaypoint-2].Drone_Arrived == True
                 q.put(cameras)
                 break
 
@@ -161,8 +161,8 @@ def navigation(q, camera_locations, landing_sequence, target):
             cameras = g.get()
             if (cameras != None):
                 if (timer.timeElapsed() > 240):
-                    cameras[nextwaypoint-2]["Timeout"] = True
-                if ((cameras[nextwaypoint-2]["Download_Complete"] == False) and (cameras[nextwaypoint-2]["Timeout"] == False)):
+                    cameras[nextwaypoint-2].Timeout = True
+                if ((cameras[nextwaypoint-2].Download_Complete == False) and (cameras[nextwaypoint-2].Timeout == False)):
                     log(target, "Waiting for data download")
                     time.sleep(1)
                 else:
