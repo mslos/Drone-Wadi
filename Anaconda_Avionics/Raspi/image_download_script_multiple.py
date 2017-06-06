@@ -134,7 +134,7 @@ def download_sequence(q, ID_list):
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         while True:
             cameras = q.get()
-            if (cameras =! None):
+            if (cameras != None):
                 cameras[counter]["Download_Started"] == True
                 q.put(cameras)
                 break
