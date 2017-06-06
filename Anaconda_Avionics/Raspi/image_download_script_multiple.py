@@ -135,7 +135,7 @@ def download_sequence(q, ID_list):
         while True:
             cameras = q.get()
             if (cameras != None):
-                cameras[counter]["Download_Started"] == True
+                cameras[counter]["Download_Started"] = True
                 q.put(cameras)
                 break
 
@@ -144,7 +144,7 @@ def download_sequence(q, ID_list):
         while True:
             cameras = q.get()
             if (cameras != None):
-                cameras[counter]["Download_Complete"] == True
+                cameras[counter]["Download_Complete"] = True
                 q.put(cameras)
                 break
 
