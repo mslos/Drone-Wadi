@@ -26,7 +26,7 @@ class Response():
         self.rawMessage = ser.readlines()
         self.id = ID
         self.command = command
-        self.value = valuea
+        self.value = value
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
