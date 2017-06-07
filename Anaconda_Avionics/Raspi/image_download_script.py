@@ -31,7 +31,7 @@ class Response():
         notGarbage = []
         returnMessage = self.rawMessage
         print "Raw message is " + str(returnMessage)
-	    for i in returnMessage:
+	for i in returnMessage:
             if "%" in i:
                 message = ""
                 read = False
