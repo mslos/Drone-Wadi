@@ -169,12 +169,13 @@ def navigation(q, camera_locations, landing_sequence, target):
             if (cameras != None):
                 if (timer.timeElapsed() > 240):
                     cameras[nextwaypoint-2].Timeout = True
+                    log(target, tmission.timeStamp() + "Timeout Event!")
                 if ((cameras[nextwaypoint-2].Download_Complete == False) and (cameras[nextwaypoint-2].Timeout == False)):
                     log(target, tmission.timeStamp() + "Waiting for data download")
-                    time.sleep(1)
                 else:
                     exit_loop = True
                 q.put(cameras)
+                time.sleep(1)
             if exit_loop:
                 break
     	log(target, tmission.timeStamp() + "Continuing mission")
