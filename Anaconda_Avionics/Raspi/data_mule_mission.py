@@ -1,3 +1,9 @@
+########################################################
+## Data retrieval script for Wadi Drone
+## Daniel Carelli, Mission Mule
+## Summer 2017
+########################################################
+
 from plane_navigation_script0 import navigation
 from image_download_script_multiple import download_sequence
 import argparse

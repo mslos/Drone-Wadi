@@ -1,5 +1,5 @@
 ########################################################
-## Basic Mission to test waypoints, landing and takeoff
+## Dynamic Navigation Script for Wadi Drone 
 ## Daniel Carelli, Mission Mule
 ## Summer 2017
 ########################################################
