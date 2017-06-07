@@ -1,3 +1,9 @@
+########################################################
+## Data retrieval script for Wadi Drone
+## Daniel Carelli, Mission Mule
+## Summer 2017
+########################################################
+
 from plane_navigation_script0 import navigation
 from image_download_script_multiple import download_sequence
 import argparse
@@ -81,11 +87,14 @@ def extract_waypoints(target):
 filename = "mission_raspi_log.txt"
 target = open(filename, 'w')
 
-##
+## EXTRACT WAYPOINTS FROM CSV FILES
 camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(target)
+
+## CREATE QUEUE ACCESSIBLE TO BOTH THREADS
 q = Queue()
 q.put(camera_traps)
 
+## CREATE AND START NAVIGATION AND DOWNLOAD THREADS
 navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
 download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs,))
 
@@ -95,6 +104,7 @@ download_thread.start()
 navigation_thread.join()
 download_thread.join()
 
+## GET FINAL STATUS ON CAMERA TRAPS AND DISPLAY
 camera_traps = q.get()
 
 for camera in camera_traps:

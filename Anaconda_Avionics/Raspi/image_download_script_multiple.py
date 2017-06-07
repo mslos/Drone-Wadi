@@ -91,6 +91,7 @@ def downloadFiles(ID): #Transfers files from camera trap to drone.
     print "downloadFiles: Rsync returned with code: "+str(copy_files)
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
+    return copy_files # if copy_files=0, then download was succesful
 
 def POWR (ID, value):
     message = Command(ID,"POWR",value)
@@ -139,12 +140,13 @@ def download_sequence(q, ID_list):
                 q.put(cameras)
                 break
 
-        downloadFiles(ID)
+        successful_download = downloadFiles(ID)
 
         while True:
             cameras = q.get()
             if (cameras != None):
-                cameras[counter].Download_Complete = True
+                if (successful_download == 0):
+                    cameras[counter].Download_Complete = True
                 q.put(cameras)
                 break
 
