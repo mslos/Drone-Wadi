@@ -4,18 +4,13 @@
 ## Summer 2017
 ########################################################
 
-from plane_navigation_script0 import navigation
+from plane_navigation_script0 import navigation, log
 from image_download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
 import threading
 from Queue import Queue
-
-## fn: LOG STATUS PROCESSOR
-def log(target_file, message):
-	print message
-	target_file.write(message)
-	target_file.write('\n')
+from mission_logger import log, mission_logger
 
 class Camera:
     def __init__(self, longitude, latitude, altitude, ID):
@@ -41,13 +36,13 @@ class Camera:
         return retString
 
 ## fn: GET CAMERA TRAP INFORMATION
-def extract_waypoints(target):
+def extract_waypoints(message_queue):
 
     parser = argparse.ArgumentParser(description='Process some.')
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
     args = parser.parse_args()
 
-    log(target, "Reading Mission File")
+    log(message_queue, "Reading Mission File")
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     cameras = [[i for i in line.strip().split(',')] for line in args.file[0].readlines()]
 
@@ -57,7 +52,7 @@ def extract_waypoints(target):
     for line in range(len(cameras)):
     	if not cameras[line][0].isalpha(): # Not data column descriptor
             new_camera = Camera(float(cameras[line][0]),float(cameras[line][1]),int(cameras[line][2]), cameras[line][3])
-            log(target, new_camera.summary())
+            log(message_queue, new_camera.summary())
             camera_traps.append(new_camera)
 
     #  Make list of LocationGlobal Objects for camera traps and Camera IDs
@@ -68,7 +63,7 @@ def extract_waypoints(target):
         camera_IDs.append(cam.ID)
 
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
-    log(target, "Reading Landing Sequence")
+    log(message_queue, "Reading Landing Sequence")
     landing = [[i for i in line.strip().split(',')] for line in args.file[1].readlines()]
 
     #  Raw latitude, longitude, and altitude for LANDING SEQUENCE translated to
@@ -77,37 +72,35 @@ def extract_waypoints(target):
     for line in range(len(landing)):
     	if not landing[line][0].isalpha(): # Not data column descriptor
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
-            log(target, "Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
+            log(message_queue, "Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
 
     return camera_traps, camera_locations, landing_waypoints, camera_IDs
 
 ###############################################################################
 
-## PREPARE MISSION LOG FILE
-filename = "mission_raspi_log.txt"
-target = open(filename, 'w')
+## PREPARE MISSION LOG
+message_queue = Queue()
+logging_thread = threading.Thread(target=mission_logger, args=(message_queue,))
+logging_thread.start()
 
 ## EXTRACT WAYPOINTS FROM CSV FILES
-camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(target)
+camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(message_queue)
 
 ## CREATE QUEUE ACCESSIBLE TO BOTH THREADS
 q = Queue()
 q.put(camera_traps)
 
 ## CREATE AND START NAVIGATION AND DOWNLOAD THREADS
-navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,target,))
+navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,message_queue,))
 download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs,))
 
 navigation_thread.start()
 download_thread.start()
 
 navigation_thread.join()
-download_thread.join()
 
 ## GET FINAL STATUS ON CAMERA TRAPS AND DISPLAY
 camera_traps = q.get()
 
 for camera in camera_traps:
-    log(target, camera.summary())
-
-target.close()
+    log(message_queue, camera.summary())
