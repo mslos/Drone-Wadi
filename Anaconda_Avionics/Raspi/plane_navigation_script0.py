@@ -11,7 +11,6 @@ from pymavlink import mavutil
 import sys
 import os
 from Queue import Queue
-from mission_logger import log
 
 ## fn: Callback definition for mode observer
 def mode_callback(self, attr_name, msg):
@@ -41,45 +40,45 @@ def get_distance_metres(aLocation1, aLocation2):
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
 def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message_queue):
-    log(message_queue, + "Download mission")
+    message_queue.put("Download mission")
     cmds = vehicle.commands
     cmds.download()
     cmds.wait_ready()
 
-    log(message_queue, "Clear any existing commands")
+    message_queue.put("Clear any existing commands")
     cmds.clear()
 
     #  Add takeoff command
-    log(message_queue, "Adding takeoff command")
+    message_queue.put("Adding takeoff command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30, 0, 0, 0, 0, 0, 30))
 
     #  Add camera trap locations as unlimeted loiter commands. The aircraft will
     #  fly to the GPS coordinate and circle them indefinitely. The autopilot
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
-    log(message_queue, "Adding new waypoint commands.")
+    message_queue.put("Adding new waypoint commands.")
     for cam in camera_locations:
         print cam
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, cam.lat, cam.lon, cam.alt))
 
     #  Add landing sequence
-    log(message_queue, "Adding landing sequece")
+    message_queue.put("Adding landing sequece")
 
     #  Start landing Ssquence
-    log(message_queue, "Adding start landing command")
+    message_queue.put("Adding start landing command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     #  Approach runway
-    log(message_queue, "Adding runway approach waypoints")
+    message_queue.put("Adding runway approach waypoints")
     for i in range(len(landing_sequence)-1):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, landing_sequence[i].lat, landing_sequence[i].lon, int(landing_sequence[i].alt)))
 
     #  Execute landing operation
-    log(message_queue, "Adding landing command")
+    message_queue.put("Adding landing command")
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, landing_sequence[len(landing_sequence)-1].lat, landing_sequence[len(landing_sequence)-1].lon, 0))
 
     #  Upload mission
-    log(message_queue, "Uploading full loiter mission")
+    message_queue.put("Uploading full loiter mission")
     cmds.upload()
 
 ## TIMER OBJECT
@@ -107,9 +106,9 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
     ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
     while str(vehicle.mode.name) != "GUIDED":
-    	log(message_queue, "Waiting for user to initiate mission")
+    	message_queue.put("Waiting for user to initiate mission")
     	time.sleep(0.5)
-    log(message_queue, "Raspi is taking control of drone")
+    message_queue.put("Raspi is taking control of drone")
 
     ## UPLOAD FULL LOITER MISSION
     set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message_queue)
@@ -117,7 +116,7 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
     ## WAIT FOR VEHICLE TO SWITCH TO AUTO
     while str(vehicle.mode.name) != "AUTO":
-        log(message_queue, "Waiting for user to begin mission")
+        message_queue.put("Waiting for user to begin mission")
         time.sleep(1)
 
     ## ADD MODE CHANGE LISTENER
@@ -129,7 +128,7 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
     while (vehicle.commands.next == 1):
     	current_alt = vehicle.location.global_relative_frame.alt
-    	log(message_queue, "Taking off. Alt: %s" % current_alt)
+    	message_queue.put("Taking off. Alt: %s" % current_alt)
     	time.sleep(0.5)
 
     nextwaypoint = vehicle.commands.next
@@ -138,9 +137,9 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
     		distance = get_distance_metres(camera_locations[nextwaypoint-2], vehicle.location.global_frame)
     		# camera_traps is indexed at 0, and commands are indexed at 1
     		# with the first reserved for takeoff. This is why we do [nextwaypoints-2]
-    		log(message_queue,"Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
+    		message_queue.put("Distance to camera " + str(nextwaypoint)+ ": " + str(distance))
     		time.sleep(0.5)
-    	log(message_queue, "Arrived at camera. LOITER for 30 seonds.")
+    	message_queue.put("Arrived at camera. LOITER for 30 seonds.")
 
     	while (str(vehicle.mode.name) != "LOITER"):
     		vehicle.mode = VehicleMode("LOITER")
@@ -161,16 +160,16 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
             if (cameras != None):
                 if (timer.timeElapsed() > 240):
                     cameras[nextwaypoint-2].Timeout = True
-                    log(message_queue, "Timeout Event!")
+                    message_queue.put("Timeout Event!")
                 if ((cameras[nextwaypoint-2].Download_Complete == False) and (cameras[nextwaypoint-2].Timeout == False)):
-                    log(message_queue, "Waiting for data download")
+                    message_queue.put("Waiting for data download")
                 else:
                     exit_loop = True
                 q.put(cameras)
                 time.sleep(1)
             if exit_loop:
                 break
-    	log(message_queue, "Continuing mission")
+    	message_queue.put("Continuing mission")
 
     	while (str(vehicle.mode.name) != "AUTO"):
     		vehicle.mode = VehicleMode("AUTO")
@@ -178,15 +177,15 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
     ## RETURN TO HOME
     #  At this point, it should begin going through the landing sequence points.
-    log(message_queue, "Starting Landing Sequence")
+    message_queue.put("Starting Landing Sequence")
     while (vehicle.commands.next < (land_num+cam_num)):
     	distance = get_distance_metres(landing_sequence[nextwaypoint-1], vehicle.location.global_frame)
-    	log(message_queue, "Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
+    	message_queue.put("Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
     	time.sleep(1)
 
     current_alt = vehicle.location.global_relative_frame.alt
 
     while (current_alt >= 0.5):
     	current_alt = vehicle.location.global_relative_frame.alt
-    	log(message_queue, "Landing. Alt: %s" % current_alt)
+    	message_queue.put("Landing. Alt: %s" % current_alt)
     	time.sleep(0.5)

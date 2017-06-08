@@ -4,13 +4,13 @@
 ## Summer 2017
 ########################################################
 
-from plane_navigation_script0 import navigation, log
+from plane_navigation_script0 import navigation
 from image_download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
 import threading
 from Queue import Queue
-from mission_logger import log, mission_logger
+
 
 class Camera:
     def __init__(self, longitude, latitude, altitude, ID):
@@ -42,7 +42,7 @@ def extract_waypoints(message_queue):
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
     args = parser.parse_args()
 
-    log(message_queue, "Reading Mission File")
+    message_queue.put("Reading Mission File")
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
     cameras = [[i for i in line.strip().split(',')] for line in args.file[0].readlines()]
 
@@ -52,7 +52,7 @@ def extract_waypoints(message_queue):
     for line in range(len(cameras)):
     	if not cameras[line][0].isalpha(): # Not data column descriptor
             new_camera = Camera(float(cameras[line][0]),float(cameras[line][1]),int(cameras[line][2]), cameras[line][3])
-            log(message_queue, new_camera.summary())
+            message_queue.put(new_camera.summary())
             camera_traps.append(new_camera)
 
     #  Make list of LocationGlobal Objects for camera traps and Camera IDs
@@ -63,7 +63,7 @@ def extract_waypoints(message_queue):
         camera_IDs.append(cam.ID)
 
     #  Read absolute GPS coordinates and altitude from CSV file into list of lists
-    log(message_queue, "Reading Landing Sequence")
+    message_queue.put("Reading Landing Sequence")
     landing = [[i for i in line.strip().split(',')] for line in args.file[1].readlines()]
 
     #  Raw latitude, longitude, and altitude for LANDING SEQUENCE translated to
@@ -72,9 +72,24 @@ def extract_waypoints(message_queue):
     for line in range(len(landing)):
     	if not landing[line][0].isalpha(): # Not data column descriptor
             landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
-            log(message_queue, "Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
+            message_queue.put("Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
 
     return camera_traps, camera_locations, landing_waypoints, camera_IDs
+
+def mission_logger(message_queue):
+    mission_time = Timer()
+
+    log_filename = "mission_raspi_log.txt"
+    log_file = open(log_filename, "a")
+    log_file.write("############### NEW MISSION ###############")
+
+    while True:
+        message = message_queue.get()
+        if (message != None):
+            log_file.write(mission_time.timeStamp() + message)
+            print (mission_time.timeStamp() + message)
+            if (message == "MISSION END"):
+                return
 
 ###############################################################################
 
@@ -103,4 +118,6 @@ navigation_thread.join()
 camera_traps = q.get()
 
 for camera in camera_traps:
-    log(message_queue, camera.summary())
+    message_queue.put(camera.summary())
+
+message_queue.put("MISSION END")
