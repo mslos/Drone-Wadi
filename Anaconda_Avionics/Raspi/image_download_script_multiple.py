@@ -121,7 +121,7 @@ def RSET (ID, value="0"):
         return RSET(ID)
     return responseMessage
 
-def download_sequence(q, ID_list):
+def download_sequence(q, ID_list, message_queue):
     counter = 0
     for ID in ID_list:
         #os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved

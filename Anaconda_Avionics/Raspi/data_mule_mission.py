@@ -1,5 +1,5 @@
 ########################################################
-## Data retrieval script for Wadi Drone
+## Data Retrieval Script for Wadi Drone
 ## Daniel Carelli, Mission Mule
 ## Summer 2017
 ########################################################
@@ -24,7 +24,7 @@ class Camera:
         self.Download_Complete = False
 
     def getLocationObject(self):
-        return LocationGlobal(self.longitude, self.latitude, self.altitude)
+        return LocationGlobalRelative(self.longitude, self.latitude, self.altitude)
 
     def summary(self):
         retString = "Camera ID: " + self.ID + "\n"
@@ -55,7 +55,7 @@ def extract_waypoints(message_queue):
             message_queue.put(new_camera.summary())
             camera_traps.append(new_camera)
 
-    #  Make list of LocationGlobal Objects for camera traps and Camera IDs
+    #  Make list of LocationGlobalRelative Objects for camera traps and Camera IDs
     camera_locations = []
     camera_IDs = []
     for cam in camera_traps:
@@ -67,11 +67,11 @@ def extract_waypoints(message_queue):
     landing = [[i for i in line.strip().split(',')] for line in args.file[1].readlines()]
 
     #  Raw latitude, longitude, and altitude for LANDING SEQUENCE translated to
-    #  LocationGlobals
+    #  LocationGlobalRelative
     landing_waypoints = []
     for line in range(len(landing)):
     	if not landing[line][0].isalpha(): # Not data column descriptor
-            landing_waypoints.append(LocationGlobal(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
+            landing_waypoints.append(LocationGlobalRelative(float(landing[line][0]),float(landing[line][1]),float(landing[line][2])))
             message_queue.put("Lon: " + str(landing[line][0]) + " Lat: " + str(landing[line][1]) + " Alt: " + str(landing[line][2]))
 
     return camera_traps, camera_locations, landing_waypoints, camera_IDs
@@ -107,7 +107,7 @@ q.put(camera_traps)
 
 ## CREATE AND START NAVIGATION AND DOWNLOAD THREADS
 navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,message_queue,))
-download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs,))
+download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs, message_queue,))
 
 navigation_thread.start()
 download_thread.start()
