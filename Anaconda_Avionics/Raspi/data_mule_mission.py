@@ -129,4 +129,6 @@ log_file.write("MISSION END")
 camera_traps = q.get()
 
 for camera in camera_traps:
-    log_file.write(camera.summary())
+    log_message = camera.summary()
+    log_file.write(log_message)
+    print log_message
