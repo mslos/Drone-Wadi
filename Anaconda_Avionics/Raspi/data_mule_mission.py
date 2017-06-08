@@ -93,10 +93,7 @@ def mission_logger(message_queue):
 
 ###############################################################################
 
-## PREPARE MISSION LOG
-message_queue = Queue()
-logging_thread = threading.Thread(target=mission_logger, args=(message_queue,))
-logging_thread.start()
+mission_time = Timer()
 
 ## EXTRACT WAYPOINTS FROM CSV FILES
 camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(message_queue)
@@ -112,12 +109,22 @@ download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs
 navigation_thread.start()
 download_thread.start()
 
-navigation_thread.join()
+
+
+log_filename = "mission_raspi_log.txt"
+log_file = open(log_filename, "a")
+log_file.write("############### NEW MISSION ###############")
+
+while navigation_thread.is_alive():
+    message = message_queue.get()
+    if (message != None):
+        log_file.write(mission_time.timeStamp() + message)
+        print (mission_time.timeStamp() + message)
+
+log_file.write("MISSION END")
 
 ## GET FINAL STATUS ON CAMERA TRAPS AND DISPLAY
 camera_traps = q.get()
 
 for camera in camera_traps:
-    message_queue.put(camera.summary())
-
-message_queue.put("MISSION END")
+    log_file.write(camera.summary())
