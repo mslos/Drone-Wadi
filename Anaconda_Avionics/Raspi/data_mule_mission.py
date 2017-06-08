@@ -94,6 +94,7 @@ def mission_logger(message_queue):
 ###############################################################################
 
 mission_time = Timer()
+message_queue = Queue()
 
 ## EXTRACT WAYPOINTS FROM CSV FILES
 camera_traps, camera_locations, landing_waypoints, camera_IDs = extract_waypoints(message_queue)
