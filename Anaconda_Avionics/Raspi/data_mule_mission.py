@@ -119,8 +119,9 @@ log_file.write("############### NEW MISSION ###############")
 while navigation_thread.is_alive():
     message = message_queue.get()
     if (message != None):
-        log_file.write(mission_time.timeStamp() + message)
-        print (mission_time.timeStamp() + message)
+        log_message = mission_time.timeStamp() + message
+        log_file.write(log_message)
+        print (log_message)
 
 log_file.write("MISSION END")
 
