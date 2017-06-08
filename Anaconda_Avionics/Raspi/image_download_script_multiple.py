@@ -30,7 +30,7 @@ class Response():
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
-        print "Raw message is " + str(returnMessage)
+        #print "Raw message is " + str(returnMessage)
         for i in returnMessage:
             if "%" in i:
                 message = ""
@@ -85,7 +85,7 @@ def downloadFiles(ID): #Transfers files from camera trap to drone.
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
     camera_trap_path = "/media/usbhdd/DCIM/"
-    usb_drive_path = "/media/pi/B037-6D1A/"+str(ID)
+    usb_drive_path = "/media/pi/B037-6D1A1/"+str(ID)
     rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)-1]+":"+camera_trap_path+" "+usb_drive_path
     copy_files = sp.call(rsync_command, shell=True)
     print "downloadFiles: Rsync returned with code: "+str(copy_files)
@@ -124,7 +124,7 @@ def RSET (ID, value="0"):
 def download_sequence(q, ID_list, message_queue):
     counter = 0
     for ID in ID_list:
-        #os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
+        os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
         ID = IDEN(ID)[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
         POWR (ID,"1")
@@ -165,3 +165,4 @@ def download_sequence(q, ID_list, message_queue):
 if __name__ == "__main__":
     ID_list = ["001", "002"]
     download_sequence()
+    
