@@ -146,33 +146,33 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
         #  Toggle Drone_Arrived parameter of camera
         while True:
-			try:
-            	cameras = q.get_nowait()
-                cameras[nextwaypoint-2].Drone_Arrived == True
-                q.put(cameras)
-                break
-			except Empty:
-				pass
+		try:
+            		cameras = q.get_nowait()
+                	cameras[nextwaypoint-2].Drone_Arrived == True
+                	q.put(cameras)
+                	break
+		except Empty:
+			pass
 
         #  Monitor State of Download
         timer = Timer()
         exit_loop = False
         while True:
-			try:
-            	cameras = q.get_nowait()
-                if (timer.timeElapsed() > 240):
-                    cameras[nextwaypoint-2].Timeout = True
-                    message_queue.put("Timeout Event!")
-                if ((cameras[nextwaypoint-2].Download_Complete == False) and (cameras[nextwaypoint-2].Timeout == False)):
-                    message_queue.put("Waiting for data download")
-                else:
-                    exit_loop = True
-                q.put(cameras)
-                time.sleep(1)
-            	if exit_loop:
-                	break
-			except Empty:
-				pass
+		try:
+            		cameras = q.get_nowait()
+                	if (timer.timeElapsed() > 240):
+                    		cameras[nextwaypoint-2].Timeout = True
+                    		message_queue.put("Timeout Event!")
+                	if ((cameras[nextwaypoint-2].Download_Complete == False) and (cameras[nextwaypoint-2].Timeout == False)):
+                	    	message_queue.put("Waiting for data download")
+                	else:
+                    		exit_loop = True
+                	q.put(cameras)
+                	time.sleep(1)
+            		if exit_loop:
+                		break
+		except Empty:
+			pass
 
     	message_queue.put("Continuing mission")
 
