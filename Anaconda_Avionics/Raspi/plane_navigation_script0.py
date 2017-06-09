@@ -10,7 +10,7 @@ import math
 from pymavlink import mavutil
 import sys
 import os
-from Queue import Queue
+from Queue import Queue, Empty
 
 ## fn: Callback definition for mode observer
 def mode_callback(self, attr_name, msg):
@@ -146,18 +146,20 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
 
         #  Toggle Drone_Arrived parameter of camera
         while True:
-            cameras = q.get()
-            if (cameras != None):
+			try:
+            	cameras = q.get_nowait()
                 cameras[nextwaypoint-2].Drone_Arrived == True
                 q.put(cameras)
                 break
+			except Empty:
+				pass
 
         #  Monitor State of Download
         timer = Timer()
         exit_loop = False
         while True:
-            cameras = q.get()
-            if (cameras != None):
+			try:
+            	cameras = q.get_nowait()
                 if (timer.timeElapsed() > 240):
                     cameras[nextwaypoint-2].Timeout = True
                     message_queue.put("Timeout Event!")
@@ -167,8 +169,11 @@ def navigation(q, camera_locations, landing_sequence, mission_queue):
                     exit_loop = True
                 q.put(cameras)
                 time.sleep(1)
-            if exit_loop:
-                break
+            	if exit_loop:
+                	break
+			except Empty:
+				pass
+
     	message_queue.put("Continuing mission")
 
     	while (str(vehicle.mode.name) != "AUTO"):

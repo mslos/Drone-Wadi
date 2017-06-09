@@ -3,7 +3,7 @@ import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 import time
-from Queue import Queue
+from Queue import Queue, Empty
 
 camera_ip_addr = ["12","13"]
 
@@ -134,21 +134,25 @@ def download_sequence(q, ID_list, message_queue):
             state = POWR(ID,"?")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         while True:
-            cameras = q.get()
-            if (cameras != None):
+            try:
+                cameras = q.get_nowait()
                 cameras[counter].Download_Started = True
                 q.put(cameras)
                 break
+            except Empty:
+                pass
 
         successful_download = downloadFiles(ID)
 
         while True:
-            cameras = q.get()
-            if (cameras != None):
+            try:
+                cameras = q.get_nowait()
                 if (successful_download == 0):
                     cameras[counter].Download_Complete = True
                 q.put(cameras)
                 break
+            except Empty:
+                pass
 
         POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
