@@ -9,7 +9,7 @@ from image_download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
 import threading
-from Queue import Queue
+from Queue import Queue, Empty
 
 
 class Camera:
@@ -84,7 +84,7 @@ def mission_logger(message_queue):
     log_file.write("############### NEW MISSION ###############")
 
     while True:
-        message = message_queue.get()
+        message = message_queue.get_nowait()
         if (message != None):
             log_file.write(mission_time.timeStamp() + message)
             print (mission_time.timeStamp() + message)
@@ -114,19 +114,28 @@ download_thread.start()
 
 log_filename = "mission_raspi_log.txt"
 log_file = open(log_filename, "a")
-log_file.write("############### NEW MISSION ###############")
+log_file.write("######################### NEW MISSION #########################")
 
 while navigation_thread.is_alive():
-    message = message_queue.get()
-    if (message != None):
+    try:
+        message = message_queue.get_nowait()
         log_message = mission_time.timeStamp() + message
         log_file.write(log_message)
         print (log_message)
+    except Empty:
+        pass
 
-log_file.write("MISSION END")
+log_file.write("######################### MISSION END #########################")
 
 ## GET FINAL STATUS ON CAMERA TRAPS AND DISPLAY
-camera_traps = q.get()
+while True:
+    try:
+        camera_traps = q.get_nowait()
+        break
+    except Empty:
+        pass
+
+log_file.write("Camera Trap Summary \n")
 
 for camera in camera_traps:
     log_message = camera.summary()
