@@ -119,7 +119,7 @@ log_file.write("######################### NEW MISSION #########################"
 while navigation_thread.is_alive():
     try:
         message = message_queue.get_nowait()
-        log_message = mission_time.timeStamp() + message
+        log_message = mission_time.timeStamp() + message + "\n"
         log_file.write(log_message)
         print (log_message)
     except Empty:
