@@ -98,7 +98,7 @@ class Timer():
 
 ################  MAIN FUNCTIONS ################
 
-def navigation(q, camera_locations, landing_sequence, mission_queue):
+def navigation(q, camera_locations, landing_sequence, message_queue):
 	## CONNECT TO VEHICLE
     connection_string = "/dev/ttyS0"
     print 'Connecting to vehicle on: %s' % connection_string
