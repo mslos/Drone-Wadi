@@ -20,7 +20,7 @@ def mode_callback(self, attr_name, msg):
 		filename = "mission_kill.txt"
 		target = open(filename, 'w')
 		target.write("PROGRAM KILLED")
-		os._exit(0)
+		sys.exit()
 		print "We should never get here! \nFUCK FUCK FUCK \nAHHHH"
 		target.write("We should never get here! \nFUCK FUCK FUCK \nAHHHH")
 
@@ -104,28 +104,32 @@ def navigation(q, camera_locations, landing_sequence, message_queue):
     print 'Connecting to vehicle on: %s' % connection_string
     vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 
+
     ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
     while str(vehicle.mode.name) != "GUIDED":
     	message_queue.put("Waiting for user to initiate mission")
     	time.sleep(0.5)
     message_queue.put("Raspi is taking control of drone")
+    
 
     ## UPLOAD FULL LOITER MISSION
     set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message_queue)
     vehicle.commands.next = 0
+    
 
     ## WAIT FOR VEHICLE TO SWITCH TO AUTO
     while str(vehicle.mode.name) != "AUTO":
         message_queue.put("Waiting for user to begin mission")
         time.sleep(1)
-
+    
     ## ADD MODE CHANGE LISTENER
     vehicle.add_attribute_listener('mode', mode_callback)
-
+   
     ## MONITOR PROGRESS ON EACH CAMERA LOCATION
     cam_num = len(camera_locations)
     land_num = len(landing_sequence)
-
+    time.sleep(10)
+    
     while (vehicle.commands.next == 1):
     	current_alt = vehicle.location.global_relative_frame.alt
     	message_queue.put("Taking off. Alt: %s" % current_alt)

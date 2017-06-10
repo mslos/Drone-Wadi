@@ -105,16 +105,16 @@ q.put(camera_traps)
 
 ## CREATE AND START NAVIGATION AND DOWNLOAD THREADS
 navigation_thread = threading.Thread(target=navigation, args=(q,camera_locations,landing_waypoints,message_queue,))
-download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs, message_queue,))
+#download_thread = threading.Thread(target=download_sequence, args=(q, camera_IDs, message_queue,))
 
 navigation_thread.start()
-download_thread.start()
+#download_thread.start()
 
 
 
 log_filename = "mission_raspi_log.txt"
 log_file = open(log_filename, "a")
-log_file.write("######################### NEW MISSION #########################")
+log_file.write("######################### NEW MISSION #########################\n")
 
 while navigation_thread.is_alive():
     try:
@@ -125,7 +125,7 @@ while navigation_thread.is_alive():
     except Empty:
         pass
 
-log_file.write("######################### MISSION END #########################")
+log_file.write("######################### MISSION END #########################\n")
 
 ## GET FINAL STATUS ON CAMERA TRAPS AND DISPLAY
 while True:

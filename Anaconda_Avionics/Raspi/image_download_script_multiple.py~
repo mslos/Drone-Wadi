@@ -3,7 +3,7 @@ import os
 import subprocess as sp
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout = 1)
 import time
-from Queue import Queue, Empty
+from Queue import Queue
 
 camera_ip_addr = ["12","13"]
 
@@ -30,7 +30,7 @@ class Response():
     def excludeGarbage(self):
         notGarbage = []
         returnMessage = self.rawMessage
-        #print "Raw message is " + str(returnMessage)
+        print "Raw message is " + str(returnMessage)
         for i in returnMessage:
             if "%" in i:
                 message = ""
@@ -85,7 +85,7 @@ def downloadFiles(ID): #Transfers files from camera trap to drone.
 #   --update This forces rsync to skip any files for which the destination file already
 #            exists and has a date later than the source file.
     camera_trap_path = "/media/usbhdd/DCIM/"
-    usb_drive_path = "/media/pi/B037-6D1A1/"+str(ID)
+    usb_drive_path = "/media/pi/B037-6D1A/"+str(ID)
     rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)-1]+":"+camera_trap_path+" "+usb_drive_path
     copy_files = sp.call(rsync_command, shell=True)
     print "downloadFiles: Rsync returned with code: "+str(copy_files)
@@ -121,7 +121,7 @@ def RSET (ID, value="0"):
         return RSET(ID)
     return responseMessage
 
-def download_sequence(q, ID_list, message_queue):
+def download_sequence(q, ID_list):
     counter = 0
     for ID in ID_list:
         os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
@@ -134,25 +134,21 @@ def download_sequence(q, ID_list, message_queue):
             state = POWR(ID,"?")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         while True:
-            try:
-                cameras = q.get_nowait()
+            cameras = q.get()
+            if (cameras != None):
                 cameras[counter].Download_Started = True
                 q.put(cameras)
                 break
-            except Empty:
-                pass
 
         successful_download = downloadFiles(ID)
 
         while True:
-            try:
-                cameras = q.get_nowait()
+            cameras = q.get()
+            if (cameras != None):
                 if (successful_download == 0):
                     cameras[counter].Download_Complete = True
                 q.put(cameras)
                 break
-            except Empty:
-                pass
 
         POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
@@ -168,5 +164,4 @@ def download_sequence(q, ID_list, message_queue):
 
 if __name__ == "__main__":
     ID_list = ["001", "002"]
-    download_sequence(q, ID_list, qw)
-    
+    download_sequence()
