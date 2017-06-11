@@ -62,7 +62,7 @@ class Response():
     def checkEcho(self): #Check if the response matches the commmand
         messageDictList = self.readMessage()
         print(messageDictList)
-        for i in messageDictList:
+	for i in messageDictList:
             messageDictList.remove(i)
             if self.command == i ["command"] and self.value in i["value"] and self.id == i ["ID"]:
                 return messageDictList
@@ -74,7 +74,7 @@ class Response():
         else:
             return None
 
-def downloadFiles(ID): #Transfers files from camera trap to drone.
+def downloadFiles(ID, message_queue): #Transfers files from camera trap to drone.
 # Rsync Arguments:
 #   -a       is equivalent to -rlptgoD, preserves everything recursion enabled
 #   -v       verbose
@@ -87,8 +87,9 @@ def downloadFiles(ID): #Transfers files from camera trap to drone.
     camera_trap_path = "/media/usbhdd/DCIM/"
     usb_drive_path = "/media/pi/B037-6D1A1/"+str(ID)
     rsync_command = "rsync -avP --chmod=a=rwX --update pi@192.168.42."+camera_ip_addr[int(ID)-1]+":"+camera_trap_path+" "+usb_drive_path
+    message_queue.put("Calling rsync with command "+rsync_command)
     copy_files = sp.call(rsync_command, shell=True)
-    print "downloadFiles: Rsync returned with code: "+str(copy_files)
+    #message_queue.put("downloadFiles: Rsync returned with code: "+str(copy_files))
     # make_backup = sp.call("ssh -v pi@192.168.10.22 'python -v /home/pi/Desktop/camerabu.py'",shell=True)
 
     return copy_files # if copy_files=0, then download was succesful
@@ -123,15 +124,17 @@ def RSET (ID, value="0"):
 
 def download_sequence(q, ID_list, message_queue):
     counter = 0
+    os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
     for ID in ID_list:
-        os.system("sudo mount /dev/sda1") #mounts USB flash drive into which photos are saved
         ID = IDEN(ID)[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
-        POWR (ID,"1")
+        message_queue.put("Identified camera trap "+str(ID))
+	POWR (ID,"1")
         #os.system("sudo python /home/pi/Desktop/BlueLED.py")
         state = POWR (ID,"?")
         while state[0]["value"] != "000001":
             state = POWR(ID,"?")
+	message_queue.put("Camera trap "+str(ID)+" is on")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         while True:
             try:
@@ -142,7 +145,7 @@ def download_sequence(q, ID_list, message_queue):
             except Empty:
                 pass
 
-        successful_download = downloadFiles(ID)
+        successful_download = downloadFiles(ID, message_queue)
 
         while True:
             try:
@@ -156,11 +159,12 @@ def download_sequence(q, ID_list, message_queue):
 
         POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
-        state = POWR (ID,"?")
-        print(state)
+        message_queue.put("Ordered camera trap "+str(ID)+" to turn off")
+	state = POWR (ID,"?")
+        #print(state)
         while state[0] ["value"] != "000000":
             state = POWR (ID,"?")
-
+	message_queue.put("Successfully turned off camera trap "+str(ID))
         RSET(ID)
         counter += 1
         #os.system("sudo umount /dev/sda1") #unmounts USB
