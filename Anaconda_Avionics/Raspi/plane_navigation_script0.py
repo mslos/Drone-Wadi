@@ -152,7 +152,7 @@ def navigation(q, camera_locations, landing_sequence, message_queue):
         while True:
 		try:
             		cameras = q.get_nowait()
-                	cameras[nextwaypoint-2].Drone_Arrived == True
+                	cameras[nextwaypoint-2].Drone_Arrived = True
                 	q.put(cameras)
                 	break
 		except Empty:
