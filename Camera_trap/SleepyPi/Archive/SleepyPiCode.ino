@@ -5,9 +5,7 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
-#define TIMEOUT_MSEC 300000
-#define CAMERA_ID String("002")
-#define FIRMWARE_VERSION String("0.3 Failsafe")
+#define TIMEOUT_MSEC 300*1000
 
 int green = 6;
 int yellow = 5;
@@ -17,7 +15,7 @@ SoftwareSerial xBeeSerial(9, 10); // Serial for Xbee RX, TX
 int dataIndex = 0;
 char dataInputBuffer[32];
 char valueBuffer[7];
-String ID = CAMERA_ID; //The ID of the Camera
+String ID = "001"; //The ID of the Camera
 bool start;
 bool parse;
 bool readCommand;
@@ -26,7 +24,7 @@ int stringLength;
 String value;
 String iden;
 bool pi_running;
-unsigned long timeSinceLastContact;
+unsigned int timeSinceLastContact;
 
 
 void setup() {
@@ -35,19 +33,13 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Just in case
   }
-  Serial.print("Starting camera trap Ardino firmware version: ");
-  Serial.println(FIRMWARE_VERSION);
-
+  Serial.println("Start..");
   delay(50);
-
   readCommand = false;
   start = false;
   parse = false;
   xBeeSerial.begin(9600);
-
-  xBeeSerial.print("Starting camera trap Arduino firmware version: ");
-  xBeeSerial.println(FIRMWARE_VERSION);
-
+  xBeeSerial.println("Hello, world?");
   SleepyPi.enablePiPower(true);
   pinMode(green, OUTPUT);
   pinMode(yellow, OUTPUT);
@@ -104,7 +96,7 @@ void loop() {
   }
 
   //timeot if no communication happened for a long time
-  if ((SleepyPi.checkPiStatus(false)) && (millis()-timeSinceLastContact > TIMEOUT_MSEC)) {
+  if (millis()-timeSinceLastContact > TIMEOUT_MSEC) {
     timeSinceLastContact=millis();
     shutPi();
   }
