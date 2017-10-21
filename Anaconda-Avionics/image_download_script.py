@@ -1,3 +1,5 @@
+# TODO: Refactor this to properly unit test image_download_script_multiple.py
+
 __author__ = 'NYUAD'
 
 import serial
