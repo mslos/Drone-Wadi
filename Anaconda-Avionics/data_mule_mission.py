@@ -4,7 +4,7 @@
 ## Summer 2017
 ########################################################
 
-from plane_navigation_script0 import navigation, Timer
+from plane_navigation_script import navigation, Timer
 from image_download_script_multiple import download_sequence
 import argparse
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal, Command
