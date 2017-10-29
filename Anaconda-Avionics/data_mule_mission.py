@@ -12,8 +12,6 @@ from image_download_script_multiple import download_sequence
 from utilities import Logger
 import csv_parser
 
-###############################################################################
-
 def data_mule_mission():
     """
     Function for starting a data retrieveal mission for Wadi Drone
