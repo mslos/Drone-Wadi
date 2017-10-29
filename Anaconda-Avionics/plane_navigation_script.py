@@ -9,10 +9,12 @@ import time
 from Queue import Empty
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
+from utilities import Timer
 
 AIRSPEED_SLOW = 15
 AIRSPEED_MED = 20
 AIRSPEED_FAST = 40
+DOWNLOAD_TIMEOUT = 240
 
 ## fn: Callback definition for mode observer
 def mode_callback(self, attr_name, msg): # pylint: disable=unused-argument
@@ -48,7 +50,7 @@ def get_distance_metres(location_1, location_2):
     return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
 ## fn: SET UP FULL LOITER AUTOMOATIC MISSION
-def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message_queue):
+def set_full_loiter_mission(vehicle, cameras, landing_waypoints, message_queue):
     """
     Defines the route that the Wadi Drone will take to service the requested camera traps.
     """
@@ -82,8 +84,8 @@ def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message
     #  proceed to the next mission item after vehicle mode is switched out of
     #  AUTO and back into AUTO.
     message_queue.put("Adding new waypoint commands.")
-    for cam in camera_locations:
-        print cam
+    for cam in cameras:
+        message_queue.put('New Camera:\n%s' % cam.summary())
         cmds.add(Command(0,
                          0,
                          0,
@@ -120,8 +122,10 @@ def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message
                      0))
 
     #  Approach runway
+    landing = landing_waypoints.pop()
     message_queue.put("Adding runway approach waypoints")
-    for i in range(len(landing_sequence)-1):
+    for waypoint in landing_waypoints:
+        message_queue.put('New Waypoint:\n%s' % waypoint.summary())
         cmds.add(Command(0,
                          0,
                          0,
@@ -133,12 +137,13 @@ def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message
                          0,
                          0,
                          0,
-                         landing_sequence[i].lat,
-                         landing_sequence[i].lon,
-                         int(landing_sequence[i].alt)))
+                         waypoint.lat,
+                         waypoint.lon,
+                         waypoint.alt))
 
     #  Execute landing operation
     message_queue.put("Adding landing command")
+    message_queue.put('Landing Target:\n%s' % landing.summary())
     cmds.add(Command(0,
                      0,
                      0,
@@ -150,41 +155,41 @@ def set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message
                      0,
                      0,
                      0,
-                     landing_sequence[len(landing_sequence)-1].lat,
-                     landing_sequence[len(landing_sequence)-1].lon,
+                     landing.lat,
+                     landing.lon,
                      0))
 
     #  Upload mission
     message_queue.put("Uploading full loiter mission")
     cmds.upload()
 
-## TIMER OBJECT
-class Timer(object):
+
+def prepare_mission(mission_queue, landing_waypoints, message_queue):
     """
-    Timer function that monitors time elapsed when started.
+    Connect to the Pixhawk and upload the mission.
     """
-    def __init__(self):
-        self.start_timer()
 
-    def start_timer(self):
-        """Start the timer"""
-        self.start = time.time()
+    while True:
+        try:
+            cameras = mission_queue.get_nowait()
+            mission_queue.put(cameras)
+            break
+        except Empty:
+            pass
 
-    def time_elapsed(self):
-        """Return the time elapsed since the timer was started"""
-        return time.time()-self.start
-
-    def time_stamp(self):
-        """Create and return a time stamp string for logging purposes"""
-        seconds = self.time_elapsed()
-        mins, secs = divmod(seconds, 60)
-        hours, mins = divmod(mins, 60)
-        return "%d:%02d:%02d: " % (hours, mins, secs)
+    ## CONNECT TO VEHICLE
+    connection_string = "/dev/ttyS0"
+    print 'Connecting to vehicle on: %s' % connection_string
+    vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
 
 
-################  MAIN FUNCTIONS ################
+    ## UPLOAD FULL LOITER MISSION
+    set_full_loiter_mission(vehicle, cameras, landing_waypoints, message_queue)
+    vehicle.commands.next = 0
 
-def navigation(mission_status_queue, camera_locations, landing_sequence, message_queue): # pylint: disable=too-many-branches, too-many-statements
+    return cameras, vehicle
+
+def navigation(mission_queue, landing_waypoints, message_queue): # pylint: disable=too-many-branches, too-many-statements
     """
     Main navigation function:
         1) Connect to Pixhawk
@@ -197,23 +202,11 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
         6) Monitor landing
     """
 
-    ## CONNECT TO VEHICLE
-    connection_string = "/dev/ttyS0"
-    print 'Connecting to vehicle on: %s' % connection_string
-    vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
+    ## CONNECT TO VEHICLE AND UPLOAD MISSION
+    cameras, vehicle = prepare_mission(mission_queue, landing_waypoints, message_queue)
 
-
-    ## WAIT FOR OPERATOR TO INITIATE RASPI MISSION
-    while str(vehicle.mode.name) != "GUIDED":
-        message_queue.put("Waiting for user to initiate mission")
-        time.sleep(0.5)
-    message_queue.put("Raspi is taking control of drone")
-
-
-    ## UPLOAD FULL LOITER MISSION
-    set_full_loiter_mission(vehicle, camera_locations, landing_sequence, message_queue)
-    vehicle.commands.next = 0
-
+    cam_num = len(cameras)
+    land_num = len(landing_waypoints)
 
     ## WAIT FOR VEHICLE TO SWITCH TO AUTO
     while str(vehicle.mode.name) != "AUTO":
@@ -224,9 +217,6 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
     vehicle.add_attribute_listener('mode', mode_callback)
 
     ## MONITOR PROGRESS ON EACH CAMERA LOCATION
-    cam_num = len(camera_locations)
-    land_num = len(landing_sequence)
-    time.sleep(10)
 
     while vehicle.commands.next == 1:
         current_alt = vehicle.location.global_relative_frame.alt
@@ -236,7 +226,7 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
     nextwaypoint = vehicle.commands.next
     while vehicle.commands.next <= cam_num+1:
         while vehicle.commands.next == nextwaypoint:
-            distance = get_distance_metres(camera_locations[nextwaypoint-2],
+            distance = get_distance_metres(cameras[nextwaypoint-2],
                                            vehicle.location.global_frame)
 
             # camera_traps is indexed at 0, and commands are indexed at 1
@@ -252,9 +242,9 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
         #  Toggle Drone_Arrived parameter of camera
         while True:
             try:
-                cameras = mission_status_queue.get_nowait()
-                cameras[nextwaypoint-2].Drone_Arrived = True
-                mission_status_queue.put(cameras)
+                cameras = mission_queue.get_nowait()
+                cameras[nextwaypoint-2].drone_arrived = True
+                mission_queue.put(cameras)
                 break
             except Empty:
                 pass
@@ -264,18 +254,19 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
         exit_loop = False
         while True:
             try:
-                cameras = mission_status_queue.get_nowait()
-                if timer.time_elapsed() > 240:
-                    cameras[nextwaypoint-2].Timeout = True
+                cameras = mission_queue.get_nowait()
+                if timer.time_elapsed() > DOWNLOAD_TIMEOUT:
+                    cameras[nextwaypoint-2].timeout = True
                     message_queue.put("Timeout Event!")
 
-                if ((cameras[nextwaypoint-2].Download_Complete is False) and
-                        (cameras[nextwaypoint-2].Timeout is False)):
+                if ((cameras[nextwaypoint-2].download_complete is False) and
+                        (cameras[nextwaypoint-2].timeout is False)):
                     message_queue.put("Waiting for data download")
                 else:
                     exit_loop = True
-                    mission_status_queue.put(cameras)
-                    time.sleep(1)
+
+                mission_queue.put(cameras)
+                time.sleep(1)
 
                 if exit_loop:
                     break
@@ -295,7 +286,7 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
     #  At this point, it should begin going through the landing sequence points.
     message_queue.put("Starting Landing Sequence")
     while vehicle.commands.next < (land_num+cam_num):
-        distance = get_distance_metres(landing_sequence[nextwaypoint-1],
+        distance = get_distance_metres(landing_waypoints[nextwaypoint-1],
                                        vehicle.location.global_frame)
         message_queue.put("Distance to Waypoint " + str(nextwaypoint)+ ": " + str(distance))
         time.sleep(1)
@@ -306,3 +297,5 @@ def navigation(mission_status_queue, camera_locations, landing_sequence, message
         current_alt = vehicle.location.global_relative_frame.alt
         message_queue.put("Landing. Alt: %s" % current_alt)
         time.sleep(0.5)
+
+    message_queue.put('mission_end')
