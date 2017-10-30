@@ -50,7 +50,7 @@ class Logger(object):
         while True:
             try:
                 message = self.message_queue.get_nowait()
-                log_entry = '[%s]: %s' % (self.timer.time_stamp, message)
+                log_entry = '[%s]: %s' % (self.timer.time_stamp(), message)
                 self.file = open(self.filename, 'a')
                 self.file.write(log_entry)
                 self.file.close()
@@ -66,7 +66,7 @@ class Logger(object):
         Single log book entries.
         """
 
-        log_entry = '[%s]: %s' % (self.timer.time_stamp, message)
+        log_entry = '[%s]: %s' % (self.timer.time_stamp(), message)
         self.file = open(self.filename, 'a')
         self.file.write(log_entry)
         self.file.close()

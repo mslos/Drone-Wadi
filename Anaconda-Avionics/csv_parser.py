@@ -12,8 +12,8 @@ class Camera(LocationGlobalRelative): # pylint: disable=too-many-instance-attrib
     Class that stores information relevant to navigation for each camera trap
     """
 
-    def __init__(self, longitude, latitude, altitude, iden):
-        super(Camera).__init__()
+    def __init__(self, latitude, longitude, altitude, iden):
+        super(Camera, self).__init__(latitude, longitude,)
         self.lon = longitude
         self.lat = latitude
         self.alt = altitude
@@ -29,7 +29,7 @@ class Camera(LocationGlobalRelative): # pylint: disable=too-many-instance-attrib
         """
 
         ret_string = "Camera ID: " + self.iden + "\n"
-        ret_string += "    Lon: %s Lat: %s Alt: %s\n" % (self.lon, self.lat, self.alt)
+        ret_string += "    Lat: %s Lon: %s Alt: %s\n" % (self.lat, self.lon, self.alt)
         ret_string += "    Timeout:           %s\n" % self.timeout
         ret_string += "    Drone_Arrived:     %s\n" % self.drone_arrived
         ret_string += "    Download_Started:  %s\n" % self.download_started
@@ -41,8 +41,8 @@ class LandingWaypoint(LocationGlobalRelative): # pylint: disable=too-few-public-
     Class that stores information relevant to navigation used for the landing approach.
     """
 
-    def __init__(self, number, longitude, latitude, altitude, airspeed="N/A"): # pylint: disable=too-many-arguments
-        super(LandingWaypoint).__init__()
+    def __init__(self, number, latitude, longitude, altitude, airspeed="N/A"): # pylint: disable=too-many-arguments
+        super(LandingWaypoint, self).__init__(latitude, longitude,)
         self.waypoint_number = number
         self.lon = longitude
         self.lat = latitude
@@ -54,8 +54,8 @@ class LandingWaypoint(LocationGlobalRelative): # pylint: disable=too-few-public-
         Returns a summary (string) of the waypoint.
         """
 
-        ret_string = "Landing Waypoint Number: " + self.waypoint_number + "\n"
-        ret_string += "    Lon: %s Lat: %s Alt: %s\n" % (self.lon, self.lat, self.alt)
+        ret_string = "Landing Waypoint Number: %s\n" % self.waypoint_number
+        ret_string += "    Lat: %s Lon: %s Alt: %s\n" % (self.lat, self.lon, self.alt)
         ret_string += "    Airspeed (m/s):           %s\n" % self.airspeed
         return ret_string
 
