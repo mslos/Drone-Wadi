@@ -31,7 +31,6 @@ class Xbee(object):
 
     def send_command(command, iden=0, timeout=0):
         timer = Timer()
-        response = [-1, -1]
         while True:
             response = [-1, -1]
             # Send command, addressed to correct iden, through serial port
@@ -44,9 +43,9 @@ class Xbee(object):
                 response[0] = response_raw[0]
                 response[0] = self.decode(response_raw[0])
 
-            # check to see if we got the desired response
-            if (response[0] == iden or iden == 0) and response[1] == command:
-                return response
+                # check to see if we got the desired response
+                if (response[0] == iden or iden == 0) and response[1] == command:
+                    return response
 
             # check for timeout
             if (timer.time_elapsed() > timeout and timeout != 0):
