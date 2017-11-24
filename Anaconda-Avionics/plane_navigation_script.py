@@ -259,13 +259,14 @@ def navigation(mission_queue, landing_waypoints, message_queue): # pylint: disab
                     cameras[nextwaypoint-2].timeout = True
                     message_queue.put("Timeout Event!")
 
+                mission_queue.put(cameras)
+
                 if ((cameras[nextwaypoint-2].download_complete is False) and
                         (cameras[nextwaypoint-2].timeout is False)):
                     message_queue.put("Waiting for data download")
                 else:
                     exit_loop = True
 
-                mission_queue.put(cameras)
                 time.sleep(1)
 
                 if exit_loop:
@@ -274,6 +275,7 @@ def navigation(mission_queue, landing_waypoints, message_queue): # pylint: disab
             except Empty:
                 pass
 
+        time.sleep(15) # wait 15 seconds to turn off camera trap
         message_queue.put("Continuing mission")
 
         while str(vehicle.mode.name) != "AUTO":

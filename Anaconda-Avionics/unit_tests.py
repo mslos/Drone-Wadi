@@ -7,6 +7,7 @@ import threading
 import plane_navigation_script
 import csv_parser
 from utilities import Logger
+from xbee_comm import Xbee
 
 def unit_test_csv_parser():
     """
@@ -55,3 +56,22 @@ def unit_test_navigation():
     logger_thread.start()
 
     plane_navigation_script.navigation(mission_queue, landing_waypoints, message_queue)
+
+def unit_test_xbee_comm(iden_num):
+    """
+    This unit test has two funtions:
+     * if iden = '?', then it will query the camera trap for its ID and print
+       this value
+     * otherwise, the xBee will turn on and off a camera trap of given ID
+    """
+    dummy_queue = Queue()
+    xbee = Xbee(dummy_queue)
+
+    if iden_num == '?':
+        response = xbee.send_command('Identify')
+        print "Camera ID: %s" % response[0]
+
+    else:
+        xbee.send_command('Power On', iden=iden_num, timeout=30)
+        time.sleep(30)
+        xbee.send_command('Power Off', iden=iden_num, timeout=30)

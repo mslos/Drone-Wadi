@@ -38,7 +38,6 @@ def data_mule_mission():
                                                                   message_queue,))
 
     download_thread = threading.Thread(target=download_sequence, args=(mission_queue,
-                                                                       camera_idens,
                                                                        message_queue,))
 
     logger_thread = threading.Thread(target=logger.start_logging, args=())
