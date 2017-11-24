@@ -4,7 +4,6 @@ import time
 from Queue import Queue, Empty
 from xbee_comm import Xbee
 
-
 def downoad_sequence(camera_traps, message_queue):
 
     cameras = camera_traps.get_nowait()
@@ -18,7 +17,7 @@ def downoad_sequence(camera_traps, message_queue):
 
         # Broadcast a directed "Power On" Command to the desired camera trap
         while True:
-            xbee_ack = xbee.send_command('Power On', cameras[i].iden, 60)
+            xbee_ack = xbee.send_command('Power On', iden=cameras[i].iden, 60)
             if xbee_ack:
 
                 # Start downloading
@@ -43,7 +42,7 @@ def downoad_sequence(camera_traps, message_queue):
                         pass
 
                 # Attempt to turn off camera trap
-                xbee.send_command('Power Off', cameras[i].iden, timeout=15)
+                xbee.send_command('Power Off', iden=cameras[i].iden, timeout=15)
 
             else:
                 cameras = camera_traps.get_nowait()
