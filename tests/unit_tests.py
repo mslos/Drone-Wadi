@@ -2,12 +2,14 @@
 Unit tests to verify partial functionality of data mule system.
 """
 
-from Queue import Queue
 import threading
-import plane_navigation_script
-import csv_parser
-from utilities import Logger
+from Queue import Queue
+
+import anaconda_avionics.plane_navigation_script
+from anaconda_avionics.utilities import csv_parser
+from anaconda_avionics.utilities import Logger
 from xbee_comm import Xbee
+
 
 def unit_test_csv_parser():
     """
@@ -36,7 +38,7 @@ def unit_test_prepare_mission():
     logger_thread = threading.Thread(target=logger.start_logging, args=())
     logger_thread.start()
 
-    plane_navigation_script.prepare_mission(mission_queue, landing_waypoints, message_queue)
+    anaconda_avionics.plane_navigation_script.prepare_mission(mission_queue, landing_waypoints, message_queue)
 
     message_queue.put('mission_end')
 
@@ -55,7 +57,7 @@ def unit_test_navigation():
     logger_thread = threading.Thread(target=logger.start_logging, args=())
     logger_thread.start()
 
-    plane_navigation_script.navigation(mission_queue, landing_waypoints, message_queue)
+    anaconda_avionics.plane_navigation_script.navigation(mission_queue, landing_waypoints, message_queue)
 
 def unit_test_xbee_comm(iden_num):
     """

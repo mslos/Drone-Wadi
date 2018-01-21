@@ -3,12 +3,13 @@ Dynamic Navigation Script for Wadi Drone
 Daniel Carelli, Mission Mule
 """
 
+from pymavlink import mavutil
+from dronekit import connect, VehicleMode, Command
+
 import math
 import os
 import time
 from Queue import Empty
-from pymavlink import mavutil
-from dronekit import connect, VehicleMode, Command
 from utilities import Timer
 
 AIRSPEED_SLOW = 15

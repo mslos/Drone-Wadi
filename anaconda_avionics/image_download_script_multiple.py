@@ -22,7 +22,7 @@ class Command ():
         ser.write(self.makeCommand())
 
 class Response():
-    def __init__(self,ID,command,value):
+    def __init__(self, ID, command, value):
         self.rawMessage = ser.readlines()
         self.id = ID
         self.command = command
@@ -62,10 +62,10 @@ class Response():
     def checkEcho(self): #Check if the response matches the commmand
         messageDictList = self.readMessage()
         print(messageDictList)
-	for i in messageDictList:
-            messageDictList.remove(i)
-            if self.command == i ["command"] and self.value in i["value"] and self.id == i ["ID"]:
-                return messageDictList
+    for i in messageDictList:
+        messageDictList.remove(i)
+        if self.command == i ["command"] and self.value in i["value"] and self.id == i ["ID"]:
+            return messageDictList
         return "retry"
     def realResponse(self): #Dummy, Optimization (?)
         message = self.checkEcho()
@@ -129,12 +129,12 @@ def download_sequence(q, ID_list, message_queue):
         ID = IDEN(ID)[0]["ID"]
         #os.system("sudo python /home/pi/Desktop/GreenLED.py")
         message_queue.put("Identified camera trap "+str(ID))
-	POWR (ID,"1")
+    POWR (ID,"1")
         #os.system("sudo python /home/pi/Desktop/BlueLED.py")
         state = POWR (ID,"?")
         while state[0]["value"] != "000001":
             state = POWR(ID,"?")
-	message_queue.put("Camera trap "+str(ID)+" is on")
+    message_queue.put("Camera trap "+str(ID)+" is on")
         #os.system("sudo python /home/pi/Desktop/RedLED.py")
         while True:
             try:
@@ -160,11 +160,11 @@ def download_sequence(q, ID_list, message_queue):
         POWR (ID,"0")
         #os.system("sudo python /home/pi/Desktop/CyanLED.py")
         message_queue.put("Ordered camera trap "+str(ID)+" to turn off")
-	state = POWR (ID,"?")
+    state = POWR (ID,"?")
         #print(state)
         while state[0] ["value"] != "000000":
             state = POWR (ID,"?")
-	message_queue.put("Successfully turned off camera trap "+str(ID))
+    message_queue.put("Successfully turned off camera trap "+str(ID))
         RSET(ID)
         counter += 1
         #os.system("sudo umount /dev/sda1") #unmounts USB

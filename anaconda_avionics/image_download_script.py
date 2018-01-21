@@ -15,7 +15,7 @@ def download_sequence(camera_traps, message_queue):
     xbee = Xbee(message_queue)
 
     # For wach desired camera trap, turn on, download, turn off
-    for i in range(length(cameras)):
+    for i in range(len(cameras)):
 
         # Broadcast a directed "Power On" Command to the desired camera trap
         while True:

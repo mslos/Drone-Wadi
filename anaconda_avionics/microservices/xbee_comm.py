@@ -5,37 +5,41 @@ from utilities import Timer
 
 class Xbee(object):
 
-    def __init__(self, message_queue):
-        self.xbee_port = connect_xbee(message_queue)
-        self.encode = {
-        'Power On' : 0,
-        'Power Off' : 1,
-        'Power Status' : 2,
-        'Indentify:' : 3
-        }
-        self.decode = {
-        0 : 'Power On',
-        1 : 'Power Off',
-        2 : 'Power Status'
-        3 : 'Identify'
-        }
+    xbee_port = None
+    encode = None
+    decode = None
 
-    def connect_xbee(message_queue):
+    def __init__(self, message_queue):
+
         while True:
             try:
-                xbee_port = serial.Serial("/dev/ttyUSB0", 9600, timeout = 5)
+                self.xbee_port = serial.Serial("/dev/ttyUSB0", 9600, timeout = 5)
                 break
             except serial.SerialException:
                 message_queue.put("Failed to connect to xBee Device")
                 time.sleep(5)
 
+        self.encode = {
+            'POWER_ON' : 0,
+            'POWER_OFF' : 1,
+            'POWER_STATUS' : 2,
+            'IDENTIFY' : 3
+        }
+        self.decode = {
+            0 : 'POWER_ON',
+            1 : 'POWER_OFF',
+            2 : 'POWER_STATUS',
+            3 : 'IDENTIFY'
+        }
+
     def send_command(command, iden=0, timeout=0):
         timer = Timer()
+
         while True:
             response = [-1, -1]
             # Send command, addressed to correct iden, through serial port
-            xbee_port.write(iden)
-            xbee_port.write(self.encode(command))
+            self.xbee_port.write(iden)
+            self.xbee_port.write(self.encode(command))
 
             # try to read the serial port (2bytes), timeout for read = 5s
             respose_raw = xbee_port.read(2)
