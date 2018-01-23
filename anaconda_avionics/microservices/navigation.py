@@ -314,10 +314,10 @@ class Navigation(object):
 
         logging.info('Connection to vehicle successful')
 
-        # Don't try to arm until autopilot is ready
-        while not vehicle.is_armable:
-            logging.info("Waiting for vehicle to initialise...")
-            time.sleep(1)
+        # # Don't try to arm until autopilot is ready
+        # while not vehicle.is_armable:
+        #     logging.info("Waiting for vehicle to initialise...")
+        #     time.sleep(1)
 
         ## UPLOAD FULL LOITER MISSION
         self.set_full_loiter_mission(vehicle, cameras, landing_waypoints)
