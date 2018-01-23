@@ -3,7 +3,6 @@ General utilities (functions and objects) used for data mule mission code.
 """
 
 import time
-from Queue import Empty
 
 ## TIMER OBJECT
 class Timer(object):

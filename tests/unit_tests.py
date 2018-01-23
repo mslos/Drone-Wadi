@@ -6,9 +6,8 @@ import threading
 from Queue import Queue
 
 import anaconda_avionics.plane_navigation_script
-from anaconda_avionics.utilities import csv_parser
-from anaconda_avionics.utilities import Logger
-from xbee_comm import Xbee
+from anaconda_avionics.utilities import mission_plan_parser
+from anaconda_avionics.utilities.xbee import Xbee
 
 
 def unit_test_csv_parser():
@@ -16,7 +15,7 @@ def unit_test_csv_parser():
     This unit test only extracts camera trap locations and landing
     sequence data and converts them into the appropriate objects.
     """
-    camera_traps, landing_waypoints = csv_parser.extract_waypoints()
+    camera_traps, landing_waypoints = mission_plan_parser.extract_waypoints()
 
     for camera in camera_traps:
         print camera.summary()
@@ -28,7 +27,7 @@ def unit_test_prepare_mission():
     """
     This unit test stops after uploading the mission to the pixhawk.
     """
-    camera_traps, landing_waypoints = csv_parser.extract_waypoints()
+    camera_traps, landing_waypoints = mission_plan_parser.extract_waypoints()
     mission_queue = Queue()
     mission_queue.put(camera_traps)
 
@@ -47,7 +46,7 @@ def unit_test_navigation():
     This unit test runs throught a full data mule mission without actually
     trying to download data from camer traps.
     """
-    camera_traps, landing_waypoints = csv_parser.extract_waypoints()
+    camera_traps, landing_waypoints = mission_plan_parser.extract_waypoints()
     mission_queue = Queue()
     mission_queue.put(camera_traps)
 

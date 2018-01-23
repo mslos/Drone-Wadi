@@ -1,7 +1,7 @@
 import serial
 import time
-from Queue import Queue, Empty
-from utilities import Timer
+
+from anaconda_avionics.utilities import Timer
 
 class Xbee(object):
 
@@ -32,7 +32,7 @@ class Xbee(object):
             3 : 'IDENTIFY'
         }
 
-    def send_command(command, iden=0, timeout=0):
+    def send_command(self, command, iden=0, timeout=0):
         timer = Timer()
 
         while True:
