@@ -142,15 +142,15 @@ class Navigation(object):
         logging.info('Mission complete')
 
     # TODO: rework for less nuclear option--no os.exit(0)
-    def mode_callback(self, attr_name, msg):
+    def mode_callback(self, vehicle, attr_name, msg):
         """
             This function monitors the vehicle mode. If the vehicle is switched to STABALIZE, the companion computer
             (Raspberry Pi) immediately relinquishes control to drone operator for manual operation.
         """
         logging.info("Mode changed...")
-        logging.info(str(self.__mode))
+        logging.info(str(vehicle.mode))
 
-        if str(self.__mode) == "VehicleMode:STABILIZE":  # Quit program entirely to silence Raspberry Pi
+        if str(vehicle.mode) == "VehicleMode:STABILIZE":  # Quit program entirely to silence Raspberry Pi
             logging.warn("Vehicle mode switched to STABILIZE. Killing program.")
             os._exit(0)  # pylint: disable=protected-access
             logging.critical("We should never get here! FUCK FUCK FUCK AHHHH")
