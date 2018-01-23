@@ -11,15 +11,15 @@ class Download(object):
     __cameras = None
     __camera_traps = None
 
-    def __init__(self, camera_traps, message_queue):
+    def __init__(self, camera_traps):
 
         self.__cameras = camera_traps.get_nowait()
         self.__camera_traps = camera_traps  # Camera traps queue reference
 
-        self.__camera_traps.put(self.__cameras)
+        self.__camera_traps.put(self.__cameras) # FIXME: Shouldn't this be handled by the Mission class?
 
         # Create and connect to xBee module
-        self.__xbee = Xbee(message_queue)
+        self.__xbee = Xbee()
 
     def start(self):
         # For desired camera trap: turn on camera trap, download to drone, delete photos from camera trap, turn off camera trap

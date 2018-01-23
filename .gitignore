@@ -1,7 +1,7 @@
 .DS_Store
 .idea/
 
-Anaconda-Avionics/login_credentials.config
+waypoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

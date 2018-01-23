@@ -25,14 +25,14 @@ class Mission:
         self.__data_stations = _data_stations
         self.__landing_waypoints = _landing_waypoints
 
-        # These are the two threads running in parallel. Running as threads ensures a level of robustness against
-        # unexpected shutdown of either thread (especially the non-critical download thread).
-        self.__download = Download()
-        self.__navigation = Navigation()
-
         # mission_queue is accessible to both threads and is used for inter-thread communication
         self.__mission_queue = Queue()
         self.__mission_queue.put(self.__data_stations)
+
+        # These are the two threads running in parallel. Running as threads ensures a level of robustness against
+        # unexpected shutdown of either thread (especially the non-critical download thread).
+        self.__download = Download(self.__mission_queue)
+        self.__navigation = Navigation(self.__mission_queue, self.__landing_waypoints)
 
     def log_data_station_status(self):
         summary = "Data stations summary: \n"
@@ -46,11 +46,13 @@ class Mission:
         """
         navigation_thread = threading.Thread(
             target=self.__navigation.start(),
-            args=(self.__mission_queue, self.__landing_waypoints))
+            args=(self.__mission_queue, self.__landing_waypoints),
+            name="NAVIGATION")
 
         download_thread = threading.Thread(
             target=self.__download.start(),
-            args=(self.__mission_queue))
+            args=(self.__mission_queue),
+            name="DOWNLOAD")
 
         navigation_thread.start()
         download_thread.start()

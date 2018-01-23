@@ -1,5 +1,7 @@
 import serial
 import time
+import logging
+import os
 
 from anaconda_avionics.utilities import Timer
 
@@ -9,15 +11,19 @@ class Xbee(object):
     encode = None
     decode = None
 
-    def __init__(self, message_queue):
+    def __init__(self):
 
         while True:
             try:
-                self.xbee_port = serial.Serial("/dev/ttyUSB0", 9600, timeout = 5)
+                if not "DEVELOPMENT" in os.environ: # Don't connect to XBee while in development
+                    self.xbee_port = serial.Serial("/dev/ttyUSB0", 9600, timeout=5)
+                    logging.info("Connected to XBee")
+                else:
+                    logging.info("In development mode, not connecting to XBee")
                 break
             except serial.SerialException:
-                message_queue.put("Failed to connect to xBee Device")
-                time.sleep(5)
+                logging.warn("Failed to connect to xBee device. Retrying connection...")
+                time.sleep(3)
 
         self.encode = {
             'POWER_ON' : 0,
@@ -39,13 +45,13 @@ class Xbee(object):
             response = [-1, -1]
             # Send command, addressed to correct iden, through serial port
             self.xbee_port.write(iden)
-            self.xbee_port.write(self.encode(command))
+            self.xbee_port.write(self.encode[command])
 
             # try to read the serial port (2bytes), timeout for read = 5s
-            respose_raw = xbee_port.read(2)
+            response_raw = self.xbee_port.read(2)
             if response_raw:
                 response[0] = response_raw[0]
-                response[0] = self.decode(response_raw[0])
+                response[0] = self.decode[response_raw[0]]
 
                 # check to see if we got the desired response
                 if (response[0] == iden or iden == 0) and response[1] == command:

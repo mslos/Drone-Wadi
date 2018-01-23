@@ -65,7 +65,7 @@ class Navigation(object):
         nextwaypoint = self.__vehicle.commands.next
         while self.__vehicle.commands.next <= cam_num + 1:
             while self.__vehicle.commands.next == nextwaypoint:
-                distance = self.get_distance_metres(cameras[nextwaypoint - 2],
+                distance = self.get_distance_meters(self.__cameras[nextwaypoint - 2],
                                                self.__vehicle.location.global_frame)
 
                 # camera_traps is indexed at 0, and commands are indexed at 1
@@ -147,6 +147,7 @@ class Navigation(object):
             This function monitors the vehicle mode. If the vehicle is switched to STABALIZE, the companion computer
             (Raspberry Pi) immediately relinquishes control to drone operator for manual operation.
         """
+        logging.info("Mode changed...")
         logging.info(str(self.__mode))
 
         if str(self.__mode) == "VehicleMode:STABILIZE":  # Quit program entirely to silence Raspberry Pi
@@ -167,8 +168,8 @@ class Navigation(object):
         dlong = location_2.lon - location_1.lon
         return math.sqrt((dlat * dlat) + (dlong * dlong)) * 1.113195e5
 
-    ## fn: SET UP FULL LOITER AUTOMATIC MISSION
-    def set_full_loiter_mission(self, vehicle, cameras, landing_waypoints, message_queue):
+    # Set up full loiter automatic mission
+    def set_full_loiter_mission(self, vehicle, cameras, landing_waypoints):
         """
         Defines the route that the Wadi Drone will take to service the requested camera traps.
         """
@@ -224,7 +225,7 @@ class Navigation(object):
         # Add landing sequence
         logging.info("Adding landing sequence...")
 
-        #  Start landing Ssquence
+        #  Start landing Sequence
         logging.info("Adding start landing command...")
         cmds.add(Command(0,
                          0,
@@ -245,7 +246,7 @@ class Navigation(object):
         landing = landing_waypoints.pop()
         logging.info("Adding runway approach waypoints...")
         for waypoint in landing_waypoints:
-            message_queue.put('New Waypoint:\n%s' % waypoint.summary())
+            logging.info('New Waypoint:\n%s' % waypoint.summary())
             cmds.add(Command(0,
                              0,
                              0,
@@ -281,7 +282,12 @@ class Navigation(object):
 
         #  Upload mission
         logging.info("Uploading full loiter mission...")
+
         cmds.upload()
+        cmds.wait_ready()
+
+        logging.info("Mission upload successful")
+
 
     def prepare_mission(self, mission_queue, landing_waypoints):
         """
@@ -296,10 +302,22 @@ class Navigation(object):
             except Empty:
                 pass
 
-        ## CONNECT TO VEHICLE
-        connection_string = "/dev/ttyS0"
+        # Set up connection with Pixhawk autopilot
+        if not "DEVELOPMENT" in os.environ:
+            connection_string = "/dev/ttyS0"
+        else: # in development mode, connect to plane over SITL (tcp:127.0.0.1:5760)
+            connection_string = "tcp:127.0.0.1:5760"
+
         logging.info('Connecting to vehicle on: %s' % connection_string)
-        vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
+
+        vehicle = connect(connection_string, baud=57600, wait_ready=True)
+
+        logging.info('Connection to vehicle successful')
+
+        # Don't try to arm until autopilot is ready
+        while not vehicle.is_armable:
+            logging.info("Waiting for vehicle to initialise...")
+            time.sleep(1)
 
         ## UPLOAD FULL LOITER MISSION
         self.set_full_loiter_mission(vehicle, cameras, landing_waypoints)
