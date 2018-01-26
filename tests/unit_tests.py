@@ -18,10 +18,11 @@ def unit_test_csv_parser():
     camera_traps, landing_waypoints = mission_plan_parser.extract_waypoints()
 
     for camera in camera_traps:
-        print camera.summary()
+        print camera.summary
 
     for waypoint in landing_waypoints:
-        print waypoint.summary()
+        print waypoint.summary
+
 
 def unit_test_prepare_mission():
     """

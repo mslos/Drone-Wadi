@@ -1,177 +1,114 @@
 import math
 import os
 import time
+import threading
 import logging
 
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
 from Queue import Empty
 
+from anaconda_avionics.microservices import Download
 from anaconda_avionics.utilities import Timer
+from anaconda_avionics.utilities import Xbee
 
 class Navigation(object):
 
+    # -----------------------
+    # Constants
+    # -----------------------
 
+    # TODO: grab these constants from those set on vehicle itself
     AIRSPEED_SLOW = 15
     AIRSPEED_MED = 20
     AIRSPEED_FAST = 40
     DOWNLOAD_TIMEOUT = 240
 
-    __mode = None
-    __cameras = None
-    __vehicle = None
+    # -----------------------
+    # Private variables
+    # -----------------------
 
-    __mission_queue = None
-    __landing_waypoints = None
-    __message_queue = None
+    __data_stations = None          # List of data stations to be visited
+    __xbee = None                   # Xbee comm module
+    __vehicle = None                # Dronekit vehicle reference
 
-    def __init__(self, _mission_queue, _landing_waypoints):
-        self.__mission_queue = _mission_queue
+    __data_stations_queue = None    # Queue of data stations to be visited
+    __landing_waypoints = None      # Queue of landing waypoints to be visited on landing approach
+
+    # -----------------------
+    # Public variables
+    # -----------------------
+
+    isNavigationComplete = False    # Allow Mission class to know when navigation has finished
+
+    def __init__(self, _data_stations_queue, _landing_waypoints):
+        self.__data_stations_queue = _data_stations_queue
         self.__landing_waypoints = _landing_waypoints
 
-    def start(self):
-        """
-            Main navigation function:
-                1) Connect to Pixhawk
-                2) Upload mission
-                3) Monitor take-off
-                4) Set plane to LOITER when arrived at camera trap
-                5) Set plane to AUTO if:
-                    a) timeout event
-                    b) camera finishes downloading
-                6) Monitor landing
-            """
+        # Create and connect to xBee module
+        self.__xbee = Xbee()  # Create and connect to xBee module
 
-        ## CONNECT TO VEHICLE AND UPLOAD MISSION
-        self.__cameras, self.__vehicle = self.prepare_mission(self.__mission_queue, self.__landing_waypoints)
-
-        cam_num = len(self.__cameras)
-        land_num = len(self.__landing_waypoints)
-
-        ## WAIT FOR VEHICLE TO SWITCH TO AUTO
-        while str(self.__vehicle.mode.name) != "AUTO":
-            logging.info("Waiting for user to begin mission")
-            time.sleep(1)
-
-        ## ADD MODE CHANGE LISTENER
-        self.__vehicle.add_attribute_listener('mode', self.mode_callback)
-
-        ## MONITOR PROGRESS ON EACH CAMERA LOCATION
-        while self.__vehicle.commands.next == 1:
-            current_alt = self.__vehicle.location.global_relative_frame.alt
-            logging.info("Taking off. Altitude: %s" % current_alt)
-            time.sleep(0.5) # FIXME: why sleep here?
-
-        nextwaypoint = self.__vehicle.commands.next
-        while self.__vehicle.commands.next <= cam_num + 1:
-            while self.__vehicle.commands.next == nextwaypoint:
-                distance = self.get_distance_meters(self.__cameras[nextwaypoint - 2],
-                                               self.__vehicle.location.global_frame)
-
-                # camera_traps is indexed at 0, and commands are indexed at 1
-                # with the first reserved for takeoff. This is why we do [nextwaypoints-2]
-                logging.info("Distance to camera " + str(nextwaypoint) + ": " + str(distance))
-                time.sleep(0.5)
-
-            logging.info("Arrived at camera. Engaging LOITER mode.")
-
-            while str(self.__vehicle.mode.name) != "LOITER":
-                self.__vehicle.mode = VehicleMode("LOITER")
-                self.__vehicle.airspeed = self.AIRSPEED_SLOW
-
-            # Toggle Drone_Arrived parameter of camera
-            while True:
-                try:
-                    cameras = self.__mission_queue.get_nowait()
-                    cameras[nextwaypoint - 2].drone_arrived = True
-                    self.__mission_queue.put(cameras)
-                    break
-                except Empty:
-                    pass
-
-            # Monitor State of Download
-            timer = Timer()
-            while True:
-                try:
-                    cameras = self.__mission_queue.get_nowait()
-                    if timer.time_elapsed() > self.DOWNLOAD_TIMEOUT:
-                        cameras[nextwaypoint - 2].timeout = True
-                        logging.warn("Download timeout")
-
-                    self.__mission_queue.put(cameras)
-                    # TODO: clean up and comment this section
-                    if ((cameras[nextwaypoint - 2].download_complete is False) and
-                            (cameras[nextwaypoint - 2].timeout is False)):
-                        logging.info("Waiting for data download...")
-                    else:
-                        break
-
-                    time.sleep(1) # FIXME: Why sleep?
-
-                except Empty:
-                    pass
-
-            time.sleep(15)  # wait 15 seconds to turn off camera trap FIXME: Why wait, why not continue when we know trap is off?
-            logging.info("Continuing mission...")
-
-            while str(self.__vehicle.mode.name) != "AUTO":
-                self.__vehicle.mode = VehicleMode("AUTO")
-                self.__vehicle.airspeed = self.AIRSPEED_FAST
-
-            logging.info("Switched vehicle to AUTO mode")
-            logging.info("Airspeed set to AIRSPEED_FAST")
-
-            nextwaypoint = self.__vehicle.commands.next
-
-        ## RETURN TO HOME
-        #  At this point, it should begin going through the landing sequence points.
-        logging.info("Starting landing sequence...")
-        while self.__vehicle.commands.next < (land_num + cam_num):
-            distance = self.get_distance_meters(self.__landing_waypoints[nextwaypoint - 1],
-                                           self.__vehicle.location.global_frame)
-            logging.info("Distance to waypoint " + str(nextwaypoint) + ": " + str(distance))
-            time.sleep(1)
-
-        current_alt = self.__vehicle.location.global_relative_frame.alt
-
-        while current_alt >= 0.5:
-            current_alt = self.__vehicle.location.global_relative_frame.alt
-            logging.info("Landing. Alt: %s" % current_alt)
-            time.sleep(0.5)
-
-        logging.info('Mission complete')
+    # -----------------------
+    # General utility methods
+    # -----------------------
 
     # TODO: rework for less nuclear option--no os.exit(0)
     def mode_callback(self, vehicle, attr_name, msg):
-        """
+         """
             This function monitors the vehicle mode. If the vehicle is switched to STABALIZE, the companion computer
             (Raspberry Pi) immediately relinquishes control to drone operator for manual operation.
-        """
-        logging.info("Mode changed...")
-        logging.info(str(vehicle.mode))
+         """
+         logging.info("Mode engaged: [%s]" % (str(vehicle.mode.name)))
 
-        if str(vehicle.mode) == "VehicleMode:STABILIZE":  # Quit program entirely to silence Raspberry Pi
-            logging.warn("Vehicle mode switched to STABILIZE. Killing program.")
-            os._exit(0)  # pylint: disable=protected-access
-            logging.critical("We should never get here! FUCK FUCK FUCK AHHHH")
+         if str(vehicle.mode.name) == "STABILIZE":  # Quit program entirely to silence Raspberry Pi
+             logging.critical("Killing program and relinquishing control to flight operator.")
+             os._exit(0)  # pylint: disable=protected-access
+             #  We should never ever ever get here!
 
-    # Calculate distance between two GPS coordinates
-    # TODO: There must be a better way to do this...
+    # TODO: There must be a better way to do this... See: Vincenty's formulae (GeoPy package)
     def get_distance_meters(self, location_1, location_2):
         """
-           Returns the ground distance in metres between two LocationGlobal objects.
-           This method is an approximation, and will not be accurate over large distances and close to the
-           earth's poles. It comes from the ArduPilot test code:
-           https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
-           """
+            Calculate distance between two GPS coordinates
+
+            Returns the ground distance in metres between two LocationGlobal objects.
+            This method is an approximation, and will not be accurate over large distances and close to the
+            earth's poles. It comes from the ArduPilot test code:
+            https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+        """
         dlat = location_2.lat - location_1.lat
         dlong = location_2.lon - location_1.lon
         return math.sqrt((dlat * dlat) + (dlong * dlong)) * 1.113195e5
 
-    # Set up full loiter automatic mission
-    def set_full_loiter_mission(self, vehicle, cameras, landing_waypoints):
+    # -----------------------
+    # Mission preparation
+    # -----------------------
+
+    def connectToAutopilot(self):
         """
-        Defines the route that the Wadi Drone will take to service the requested camera traps.
+        Connect companion computer to Pixhawk autopilot
+        :return:
+        """
+        # Set up connection with Pixhawk autopilot
+        if not "DEVELOPMENT" in os.environ: # When not in development mode, connect to real Pixhawk
+            connection_string = "/dev/ttyS0"
+        else:  # in development mode, connect to plane over SITL (tcp:127.0.0.1:5760)
+            connection_string = "tcp:127.0.0.1:5760"
+
+        logging.debug('Connecting to vehicle on: %s' % connection_string)
+
+        while True:
+            try:
+                self.__vehicle = connect(connection_string, baud=57600, wait_ready=True)
+                break
+            except:
+                logging.error("Failed to connect to vehicle. Retrying connection...")
+
+        logging.info('Connection to vehicle successful')
+
+    def uploadMission(self, vehicle, data_stations_queue, landing_waypoints):
+        """
+        Uploads route that the drone will take to service the requested camera traps
+        as a series of MAVLink commands to the autopilot.
         """
 
         cmds = vehicle.commands
@@ -205,6 +142,15 @@ class Navigation(object):
         #  proceed to the next mission item after vehicle mode is switched out of
         #  AUTO and back into AUTO.
         logging.info("Adding new waypoint commands...")
+
+        # TODO: get rid of this clunky code segment
+        while True:
+            try:
+                cameras = data_stations_queue.get_nowait()
+                break
+            except Empty:
+                pass
+
         for cam in cameras:
             logging.info('New Camera:\n%s' % cam.summary())
             cmds.add(Command(0,
@@ -289,38 +235,137 @@ class Navigation(object):
         logging.info("Mission upload successful")
 
 
-    def prepare_mission(self, mission_queue, landing_waypoints):
+    # -----------------------
+    # Mission execution
+    # -----------------------
+
+    def start(self):
         """
-        Connect to the Pixhawk and upload the mission.
+            1) Connect to Pixhawk autopilot
+            2) Upload mission
+            3) Wait for user to begin mission
+            4) Monitor take-off
+            5) Set plane to LOITER when arrived at camera trap until download complete
+            6) Set plane to AUTO if:
+                a) timeout event
+                b) camera finishes downloading
+            7) Monitor landing
         """
 
-        while True:
-            try:
-                cameras = mission_queue.get_nowait()
-                mission_queue.put(cameras)
-                break
-            except Empty:
-                pass
+        self.connectToAutopilot()
 
-        # Set up connection with Pixhawk autopilot
-        if not "DEVELOPMENT" in os.environ:
-            connection_string = "/dev/ttyS0"
-        else: # in development mode, connect to plane over SITL (tcp:127.0.0.1:5760)
-            connection_string = "tcp:127.0.0.1:5760"
+        self.uploadMission(self.__vehicle, self.__data_stations_queue, self.__landing_waypoints)
 
-        logging.info('Connecting to vehicle on: %s' % connection_string)
+        # Add listener for vehicle mode change
+        self.__vehicle.add_attribute_listener('mode', self.mode_callback)
 
-        vehicle = connect(connection_string, baud=57600, wait_ready=True)
+        # Wait for vehicle to be switched to AUTO mode to begin autonomous mission
+        logging.info("Waiting for user to begin mission...")
+        while str(self.__vehicle.mode.name) != "AUTO":
+            logging.debug("Waiting for user to begin mission...")
+            time.sleep(1)
 
-        logging.info('Connection to vehicle successful')
+        logging.info("Mission starting...")
 
-        # # Don't try to arm until autopilot is ready
-        # while not vehicle.is_armable:
-        #     logging.info("Waiting for vehicle to initialise...")
-        #     time.sleep(1)
+        cam_num = len(self.__data_stations)
+        land_num = len(self.__landing_waypoints)
 
-        ## UPLOAD FULL LOITER MISSION
-        self.set_full_loiter_mission(vehicle, cameras, landing_waypoints)
-        vehicle.commands.next = 0
+        # Monitor takeoff progress
+        logging.info("Taking off...")
+        while self.__vehicle.commands.next == 1:
+            current_altitude = self.__vehicle.location.global_relative_frame.alt
+            logging.debug("Current altitude: %s" % current_altitude)
+            time.sleep(0.5)
 
-        return cameras, vehicle
+        next_waypoint = self.__vehicle.commands.next
+
+        # Monitor mission progress and engage loiter when each camera trap is reached
+        while self.__vehicle.commands.next <= cam_num + 1:
+
+            logging.info("Beginning flight leg to %s..." % (str(next_waypoint)))
+
+            # Pop reference to data station being approached
+            current_data_station = self.__data_stations_queue.pop()
+
+            while self.__vehicle.commands.next == next_waypoint: # FIXME: when would this not be the case?
+
+                xbee_ack = self.__xbee.send_command('POWER_ON', iden=current_data_station.iden, timeout=6)
+                if xbee_ack:
+                    logging.debug("Xbee ACK: %s" % (str(xbee_ack)))
+
+                # data_stations are indexed at 0, and commands are indexed at 1
+                # with the first reserved for takeoff. This is why we do [next_waypoint-2]
+                distance = self.get_distance_meters(self.__data_stations[next_waypoint - 2],
+                                                    self.__vehicle.location.global_frame)
+
+                logging.debug("Distance to camera " + str(next_waypoint) + ": " + str(distance))
+                time.sleep(0.5)
+
+            logging.info("Arrived at data station")
+            logging.debug("Engaging LOITER mode...")
+
+            # Block until drone is in loiter mode
+            while str(self.__vehicle.mode.name) != "LOITER":
+                self.__vehicle.mode = VehicleMode("LOITER")
+                self.__vehicle.airspeed = self.AIRSPEED_SLOW
+
+            current_data_station.drone_arrived = True
+
+            # Spawn download thread with reference to current_data_station
+            download = Download(current_data_station)
+            download_thread = threading.Thread(target=download.start())
+            download_thread.start()
+
+            download_timer = Timer()
+            while True:
+                # Cancel download if time elapsed has exceeded predetermined timeout
+                if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT:
+                    current_data_station.timeout = True
+                    logging.warn("Download timeout: Download cancelled")
+                    break
+
+                if ( (current_data_station.download_complete is False) ):
+                    logging.debug("Waiting for data download...")
+                else:
+                    break
+
+                logging.debug("Time elapsed: %s" % (str(download_timer.time_elapsed())))
+
+                # Give download_thread as much of the computing power as possible to speed up download
+                time.sleep(3)
+
+            # Attempt to turn off camera trap
+            self.__xbee.send_command('POWER_OFF', iden=current_data_station.iden, timeout=15)
+            time.sleep(15)  # wait 15 seconds to turn off camera trap FIXME: Why wait, why not continue only when we know trap is off?
+
+            logging.info("Continuing mission...")
+
+            logging.debug("Engaging AUTO mode...")
+            while str(self.__vehicle.mode.name) != "AUTO":
+                self.__vehicle.mode = VehicleMode("AUTO")
+                self.__vehicle.airspeed = self.AIRSPEED_FAST
+
+            logging.info("Airspeed set to %.2f" % float(self.AIRSPEED_FAST))
+
+            next_waypoint = self.__vehicle.commands.next
+
+        # Return to home
+        logging.info("Beginning landing sequence...")
+
+        # Begin stepping through the landing sequence waypoints
+        while self.__vehicle.commands.next < (land_num + cam_num):
+            distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
+                                           self.__vehicle.location.global_frame)
+            logging.debug("Distance to next landing waypoint %s: %s" % (str(next_waypoint), str(distance)))
+            time.sleep(1)
+
+        logging.info("Beginning final approach...")
+
+        current_altitude = self.__vehicle.location.global_relative_frame.alt
+        while current_altitude >= 0.5:
+            current_altitude = self.__vehicle.location.global_relative_frame.alt
+            logging.debug("Altitude: %s" % str(current_altitude))
+            time.sleep(0.5)
+
+        logging.info('Mission complete')
+        self.isNavigationComplete = True

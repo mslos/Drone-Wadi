@@ -1,10 +1,15 @@
 import unittest
+from anaconda_avionics.utilities import SFTPClient
 
-class BasicTestSuite(unittest.TestCase):
-    """Basic test cases."""
+class SFTPClientTest(unittest.TestCase):
+    """SFTP download test."""
 
-    def test_absolute_truth_and_meaning(self):
-        assert True
+    def test_sftp_download(self):
+        sftp = SFTPClient('pi', 'raspberry', 'cameratrap.local')
+
+        sftp.downloadAndDeleteAllFiles()
+
+        sftp.close()
 
 if __name__ == '__main__':
     unittest.main()

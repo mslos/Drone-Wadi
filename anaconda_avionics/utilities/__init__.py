@@ -8,7 +8,5 @@ from sftp import SFTPClient
 
 from timer import Timer
 
-from timeout import Timeout
-
 from xbee import Xbee
 

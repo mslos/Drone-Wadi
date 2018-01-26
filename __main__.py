@@ -2,6 +2,8 @@ import sys
 import logging
 import argparse
 
+from anaconda_avionics.utilities import SFTPClient
+
 from anaconda_avionics import Mission
 from anaconda_avionics.utilities import MissionPlanParser
 
@@ -12,10 +14,11 @@ def main():
     # Set up logging [Logging levels in order of seriousness: DEBUG < INFO < WARNING < ERROR < CRITICAL]
     logging.basicConfig(filename='flight-log.log',
                         level=logging.DEBUG,
-                        format='%(asctime)s.%(msecs)03d %(levelname)s %(threadName)s\t%(message)s',
+                        format='%(asctime)s.%(msecs)03d %(levelname)s %(name)s\t%(message)s',
                         datefmt="%d %b %Y %H:%M:%S")
 
     # Log to STDOUT
+    # TODO: only log to stdout in debug mode
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -30,7 +33,7 @@ def main():
     logging.debug("Beginning waypoint extraction...")
 
     # Get argument input from mission start
-    parser = argparse.ArgumentParser(description='Extract CSV waypoint file paths for data stations and ')
+    parser = argparse.ArgumentParser(description='Extract CSV waypoint file paths for data stations and landing waypoints')
     parser.add_argument('file', type=argparse.FileType('r'), nargs='+')
     args = parser.parse_args()
 
@@ -48,10 +51,10 @@ def main():
     logging.debug("Landing waypoints: %i" % (len(landing_waypoints)))
 
     # Initialize and start mission
-    m = Mission(data_station_waypoints, landing_waypoints)
+    mission = Mission(data_station_waypoints, landing_waypoints)
 
-    m.log_data_station_status()
-    m.start()
+    mission.log_data_station_status()
+    mission.start()
 
 
 if __name__ == "__main__":

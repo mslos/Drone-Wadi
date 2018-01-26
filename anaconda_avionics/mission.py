@@ -4,11 +4,11 @@ This is the main navigation script for a data mule mission. This program spawns 
     2) image_download_script to manage the data tranfer from camera trap to drone
 """
 
-import threading
 import logging
-from Queue import Queue, Empty
+import time
 
-from anaconda_avionics.microservices import Download
+from Queue import Queue
+
 from anaconda_avionics.microservices import Navigation
 
 class Mission:
@@ -25,14 +25,10 @@ class Mission:
         self.__data_stations = _data_stations
         self.__landing_waypoints = _landing_waypoints
 
-        # mission_queue is accessible to both threads and is used for inter-thread communication
-        self.__mission_queue = Queue()
-        self.__mission_queue.put(self.__data_stations)
+        self.__data_stations_queue = Queue()
+        self.__data_stations_queue.put(self.__data_stations)
 
-        # These are the two threads running in parallel. Running as threads ensures a level of robustness against
-        # unexpected shutdown of either thread (especially the non-critical download thread).
-        self.__download = Download(self.__mission_queue)
-        self.__navigation = Navigation(self.__mission_queue, self.__landing_waypoints)
+        self.__navigation = Navigation(self.__data_stations_queue, self.__landing_waypoints)
 
     def log_data_station_status(self):
         summary = "Data stations summary: \n"
@@ -42,28 +38,13 @@ class Mission:
 
     def start(self):
         """
-           Method for starting a data retrieval mission for Data Mule
+           Start data retrieval mission
         """
-        navigation_thread = threading.Thread(
-            target=self.__navigation.start(),
-            args=(self.__mission_queue, self.__landing_waypoints),
-            name="NAVIGATION")
 
-        download_thread = threading.Thread(
-            target=self.__download.start(),
-            args=(self.__mission_queue),
-            name="DOWNLOAD")
+        self.__navigation.start()
 
-        navigation_thread.start()
-        download_thread.start()
-
-        # FIXME: what does this do? Is there a more efficient way to know when all data stations have been visited?
-        while True:
-            try:
-                self.__mission_queue.get_nowait()
-                break
-            except Empty:
-                pass
+        while self.__navigation.isNavigationComplete():
+            time.sleep(1)
 
         # Get final status of data stations
         self.log_data_station_status()

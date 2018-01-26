@@ -22,7 +22,7 @@ class Xbee(object):
                     logging.info("In development mode, not connecting to XBee")
                 break
             except serial.SerialException:
-                logging.warn("Failed to connect to xBee device. Retrying connection...")
+                logging.error("Failed to connect to xBee device. Retrying connection...")
                 time.sleep(3)
 
         self.encode = {
@@ -42,7 +42,7 @@ class Xbee(object):
         timer = Timer()
 
         while True:
-            response = [-1, -1]
+            response = [-1, -1] # FIXME: why do we need a response? don't we just broadcast?
             # Send command, addressed to correct iden, through serial port
             self.xbee_port.write(iden)
             self.xbee_port.write(self.encode[command])

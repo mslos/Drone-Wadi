@@ -20,10 +20,10 @@ class DataStation(LocationGlobalRelative): # pylint: disable=too-many-instance-a
         """
         Returns a summary (string) of the status of the camera.
         """
-        ret_string = "Camera ID: " + self.iden + "\n"
-        ret_string += "    Lat: %s Lon: %s Alt: %s\n" % (self.lat, self.lon, self.alt)
-        ret_string += "    Timeout:           %s\n" % self.timeout
-        ret_string += "    Drone_Arrived:     %s\n" % self.drone_arrived
-        ret_string += "    Download_Started:  %s\n" % self.download_started
-        ret_string += "    Download_Complete: %s\n" % self.download_complete
-        return ret_string
+        retr_string = "Camera ID: " + self.iden + "\n"
+        retr_string += "    Lat: %s Lon: %s Alt: %s\n" % (self.lat, self.lon, self.alt)
+        retr_string += "    Timeout:           %s\n" % self.timeout
+        retr_string += "    Drone_Arrived:     %s\n" % self.drone_arrived
+        retr_string += "    Download_Started:  %s\n" % self.download_started
+        retr_string += "    Download_Complete: %s\n" % self.download_complete
+        return retr_string
