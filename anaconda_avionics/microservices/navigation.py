@@ -10,7 +10,7 @@ from Queue import Empty
 
 from anaconda_avionics.microservices import Download
 from anaconda_avionics.utilities import Timer
-from anaconda_avionics.utilities import Xbee
+from anaconda_avionics.utilities import XBee
 
 class Navigation(object):
 
@@ -22,18 +22,20 @@ class Navigation(object):
     AIRSPEED_SLOW = 15
     AIRSPEED_MED = 20
     AIRSPEED_FAST = 40
-    DOWNLOAD_TIMEOUT = 240
+    DOWNLOAD_TIMEOUT_SECONDS = 240
+
 
     # -----------------------
     # Private variables
     # -----------------------
 
     __data_stations = None          # List of data stations to be visited
-    __xbee = None                   # Xbee comm module
+    __xbee = None                   # XBee comm module
     __vehicle = None                # Dronekit vehicle reference
 
     __data_stations_queue = None    # Queue of data stations to be visited
     __landing_waypoints = None      # Queue of landing waypoints to be visited on landing approach
+
 
     # -----------------------
     # Public variables
@@ -45,8 +47,9 @@ class Navigation(object):
         self.__data_stations_queue = _data_stations_queue
         self.__landing_waypoints = _landing_waypoints
 
-        # Create and connect to xBee module
-        self.__xbee = Xbee()  # Create and connect to xBee module
+        # Create connection to XBee module
+        self.__xbee = XBee()  # Create and connect to xBee module
+
 
     # -----------------------
     # General utility methods
@@ -78,6 +81,7 @@ class Navigation(object):
         dlat = location_2.lat - location_1.lat
         dlong = location_2.lon - location_1.lon
         return math.sqrt((dlat * dlat) + (dlong * dlong)) * 1.113195e5
+
 
     # -----------------------
     # Mission preparation
@@ -252,8 +256,10 @@ class Navigation(object):
             7) Monitor landing
         """
 
+        # Connect companion computer to the drone
         self.connectToAutopilot()
 
+        # Translate data station and landing waypoints into MAVLink mission
         self.uploadMission(self.__vehicle, self.__data_stations_queue, self.__landing_waypoints)
 
         # Add listener for vehicle mode change
@@ -287,11 +293,11 @@ class Navigation(object):
             # Pop reference to data station being approached
             current_data_station = self.__data_stations_queue.pop()
 
-            while self.__vehicle.commands.next == next_waypoint: # FIXME: when would this not be the case?
+            # Broadcast request for data station to turn on while en route
+            self.__xbee.sendCommand('POWER_ON', identity=current_data_station.identity, timeout=6)
 
-                xbee_ack = self.__xbee.send_command('POWER_ON', iden=current_data_station.iden, timeout=6)
-                if xbee_ack:
-                    logging.debug("Xbee ACK: %s" % (str(xbee_ack)))
+            # While en route to the next data station monitor distance
+            while self.__vehicle.commands.next == next_waypoint:
 
                 # data_stations are indexed at 0, and commands are indexed at 1
                 # with the first reserved for takeoff. This is why we do [next_waypoint-2]
@@ -302,24 +308,25 @@ class Navigation(object):
                 time.sleep(0.5)
 
             logging.info("Arrived at data station")
-            logging.debug("Engaging LOITER mode...")
 
             # Block until drone is in loiter mode
+            logging.debug("Engaging LOITER mode...")
             while str(self.__vehicle.mode.name) != "LOITER":
                 self.__vehicle.mode = VehicleMode("LOITER")
                 self.__vehicle.airspeed = self.AIRSPEED_SLOW
 
+            # Mark data station object as arrived
             current_data_station.drone_arrived = True
 
             # Spawn download thread with reference to current_data_station
-            download = Download(current_data_station)
-            download_thread = threading.Thread(target=download.start())
+            download_worker = Download(current_data_station)
+            download_thread = threading.Thread(target=download_worker.start())
             download_thread.start()
 
             download_timer = Timer()
             while True:
-                # Cancel download if time elapsed has exceeded predetermined timeout
-                if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT:
+                # Cancel download if time elapsed has exceeded predetermined timeout set above
+                if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT_SECONDS:
                     current_data_station.timeout = True
                     logging.warn("Download timeout: Download cancelled")
                     break
@@ -329,30 +336,34 @@ class Navigation(object):
                 else:
                     break
 
-                logging.debug("Time elapsed: %s" % (str(download_timer.time_elapsed())))
+                logging.debug("Time remaining before download timeout: %s"
+                              % (str(self.DOWNLOAD_TIMEOUT_SECONDS - download_timer.time_elapsed())))
 
                 # Give download_thread as much of the computing power as possible to speed up download
                 time.sleep(3)
 
             # Attempt to turn off camera trap
-            self.__xbee.send_command('POWER_OFF', iden=current_data_station.iden, timeout=15)
-            time.sleep(15)  # wait 15 seconds to turn off camera trap FIXME: Why wait, why not continue only when we know trap is off?
+            self.__xbee.sendCommand('POWER_OFF', identity=current_data_station.identity, timeout=15)
+
+            # FIXME: Why wait, why not continue only when we know trap is off? Is there a way to know?
+            time.sleep(15)  # wait 15 seconds to turn off camera trap
 
             logging.info("Continuing mission...")
 
+            # Change back from LOITER to AUTO to continue previously uploaded mission
             logging.debug("Engaging AUTO mode...")
             while str(self.__vehicle.mode.name) != "AUTO":
                 self.__vehicle.mode = VehicleMode("AUTO")
                 self.__vehicle.airspeed = self.AIRSPEED_FAST
 
-            logging.info("Airspeed set to %.2f" % float(self.AIRSPEED_FAST))
+            logging.info("Airspeed set to %.2f m/s" % float(self.AIRSPEED_FAST))
 
             next_waypoint = self.__vehicle.commands.next
 
         # Return to home
         logging.info("Beginning landing sequence...")
 
-        # Begin stepping through the landing sequence waypoints
+        # Begin stepping through the landing approach waypoints
         while self.__vehicle.commands.next < (land_num + cam_num):
             distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
                                            self.__vehicle.location.global_frame)
@@ -361,11 +372,12 @@ class Navigation(object):
 
         logging.info("Beginning final approach...")
 
+        # Monitor final approach to runway
         current_altitude = self.__vehicle.location.global_relative_frame.alt
         while current_altitude >= 0.5:
             current_altitude = self.__vehicle.location.global_relative_frame.alt
-            logging.debug("Altitude: %s" % str(current_altitude))
-            time.sleep(0.5)
+            logging.debug("Current altitude: %s" % str(current_altitude))
+            time.sleep(1)
 
         logging.info('Mission complete')
         self.isNavigationComplete = True

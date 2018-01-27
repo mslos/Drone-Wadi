@@ -5,12 +5,12 @@ class DataStation(LocationGlobalRelative): # pylint: disable=too-many-instance-a
     Class that stores information relevant to navigation for each data station
     """
 
-    def __init__(self, latitude, longitude, altitude, iden):
+    def __init__(self, latitude, longitude, altitude, identity):
         super(DataStation, self).__init__(latitude, longitude,)
         self.lon = longitude
         self.lat = latitude
         self.alt = altitude
-        self.iden = iden
+        self.identity = identity
         self.timeout = False
         self.drone_arrived = False
         self.download_started = False
@@ -20,7 +20,7 @@ class DataStation(LocationGlobalRelative): # pylint: disable=too-many-instance-a
         """
         Returns a summary (string) of the status of the camera.
         """
-        retr_string = "Camera ID: " + self.iden + "\n"
+        retr_string = "Camera ID: " + self.identity + "\n"
         retr_string += "    Lat: %s Lon: %s Alt: %s\n" % (self.lat, self.lon, self.alt)
         retr_string += "    Timeout:           %s\n" % self.timeout
         retr_string += "    Drone_Arrived:     %s\n" % self.drone_arrived

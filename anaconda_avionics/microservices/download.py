@@ -12,7 +12,7 @@ class Download(object):
         self.__data_station = _data_station # Reference to DataStation object monitored by Navigation
 
         # TODO: change this to dynamically distribute required certificate
-        self.__sftp = SFTPClient('pi', 'raspberry', self.__data_station.iden)
+        self.__sftp = SFTPClient('pi', 'raspberry', self.__data_station.identity)
 
 
     def start(self):
@@ -38,7 +38,8 @@ class Download(object):
 
         logging.info("Removal of successfully transferred files complete")
 
-        self.__data_station.download_complete = True
-
         # Close connection to data station
         self.__sftp.close()
+
+        # Mark download as complete so Navigation service knows to continue mission
+        self.__data_station.download_complete = True

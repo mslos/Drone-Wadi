@@ -5,7 +5,16 @@ import os
 
 from anaconda_avionics.utilities import Timer
 
-class Xbee(object):
+class XBeeResponse(object):
+
+    message = None
+    command = None
+
+    def __init__(self):
+        pass
+
+
+class XBee(object):
 
     xbee_port = None
     encode = None
@@ -25,6 +34,7 @@ class Xbee(object):
                 logging.error("Failed to connect to xBee device. Retrying connection...")
                 time.sleep(3)
 
+        # TODO: make single dictionary
         self.encode = {
             'POWER_ON' : 0,
             'POWER_OFF' : 1,
@@ -38,25 +48,28 @@ class Xbee(object):
             3 : 'IDENTIFY'
         }
 
-    def send_command(self, command, iden=0, timeout=0):
-        timer = Timer()
+    # TODO: Make XBee not expect an integer identity, but still maintain small command size
+    def sendCommand(self, command, identity=0, timeout=0):
 
+        xbee_timer = Timer()
         while True:
-            response = [-1, -1] # FIXME: why do we need a response? don't we just broadcast?
-            # Send command, addressed to correct iden, through serial port
-            self.xbee_port.write(iden)
+            response = XBeeResponse()
+
+            # Send command, addressed to correct identity, through serial port
+            self.xbee_port.write(identity)
             self.xbee_port.write(self.encode[command])
 
-            # try to read the serial port (2bytes), timeout for read = 5s
+            # Try to read the serial port (2 bytes), timeout for read = 5s
             response_raw = self.xbee_port.read(2)
-            if response_raw:
-                response[0] = response_raw[0]
-                response[0] = self.decode[response_raw[0]]
 
-                # check to see if we got the desired response
-                if (response[0] == iden or iden == 0) and response[1] == command:
+            # If some response has come back from the data station
+            if response_raw:
+                response.message = self.decode[response_raw[0]]
+
+                # Check to see if we got the desired response
+                if (response.message == identity or identity == 0) and response.command == command:
                     return response
 
-            # check for timeout
-            if (timer.time_elapsed() > timeout and timeout != 0):
+            # Check for timeout
+            if (xbee_timer.time_elapsed() > timeout and timeout != 0):
                 return False
