@@ -18,11 +18,11 @@ class Navigation(object):
     # Constants
     # -----------------------
 
-    # TODO: grab these constants from those set on vehicle itself
-    AIRSPEED_SLOW = 15
-    AIRSPEED_MED = 20
-    AIRSPEED_FAST = 40
-    DOWNLOAD_TIMEOUT_SECONDS = 240
+    # TODO: grab these constants from those set on vehicle itself via QGroundControl parameter setup
+    AIRSPEED_SLOW = 10
+    AIRSPEED_MED = 13
+    AIRSPEED_FAST = 16
+    DOWNLOAD_TIMEOUT_SECONDS = 60
 
 
     # -----------------------
@@ -67,6 +67,7 @@ class Navigation(object):
              logging.critical("Killing program and relinquishing control to flight operator.")
              os._exit(0)  # pylint: disable=protected-access
              #  We should never ever ever get here!
+             logging.critical("FUCK FUCK FUCK The program should've stopped running.")
 
     # TODO: There must be a better way to do this... See: Vincenty's formulae (GeoPy package)
     def get_distance_meters(self, location_1, location_2):
@@ -143,7 +144,7 @@ class Navigation(object):
 
         #  Add camera trap locations as unlimited loiter commands. The aircraft will
         #  fly to the GPS coordinate and circle them indefinitely. The autopilot
-        #  proceed to the next mission item after vehicle mode is switched out of
+        #  proceeds to the next mission item after vehicle mode is switched out of
         #  AUTO and back into AUTO.
         logging.info("Adding new waypoint commands...")
 
@@ -171,6 +172,9 @@ class Navigation(object):
                              cam.lat,
                              cam.lon,
                              cam.alt))
+
+        # TODO: Use landing sequence from QGroundControl (loiter to altitude then land)
+        # See: https://github.com/mavlink/qgroundcontrol/blob/0aad76c5994535b5d552352e3a238f6842ae61c1/src/MissionManager/FixedWingLandingComplexItem.cc lines 200-242
 
         # Add landing sequence
         logging.info("Adding landing sequence...")
@@ -288,7 +292,7 @@ class Navigation(object):
         # Monitor mission progress and engage loiter when each camera trap is reached
         while self.__vehicle.commands.next <= cam_num + 1:
 
-            logging.info("Beginning flight leg to %s..." % (str(next_waypoint)))
+            logging.info("En route to %s..." % (str(next_waypoint)))
 
             # Pop reference to data station being approached
             current_data_station = self.__data_stations_queue.pop()
@@ -331,7 +335,7 @@ class Navigation(object):
                     logging.warn("Download timeout: Download cancelled")
                     break
 
-                if ( (current_data_station.download_complete is False) ):
+                if current_data_station.download_complete is False:
                     logging.debug("Waiting for data download...")
                 else:
                     break
@@ -343,12 +347,13 @@ class Navigation(object):
                 time.sleep(3)
 
             # Attempt to turn off camera trap
+            logging.info("Sending XBee POWER_OFF command...")
             self.__xbee.sendCommand('POWER_OFF', identity=current_data_station.identity, timeout=15)
 
             # FIXME: Why wait, why not continue only when we know trap is off? Is there a way to know?
             time.sleep(15)  # wait 15 seconds to turn off camera trap
 
-            logging.info("Continuing mission...")
+            logging.info("Download over. Continuing mission...")
 
             # Change back from LOITER to AUTO to continue previously uploaded mission
             logging.debug("Engaging AUTO mode...")

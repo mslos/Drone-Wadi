@@ -1,6 +1,6 @@
-import sys
-import logging
 import argparse
+import logging
+import sys
 
 from anaconda_avionics.utilities import SFTPClient
 
