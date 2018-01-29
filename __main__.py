@@ -20,7 +20,7 @@ def main():
     # Log to STDOUT
     # TODO: only log to stdout in debug mode
     ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
@@ -49,6 +49,8 @@ def main():
     logging.debug("Waypoint extraction complete")
     logging.debug("Data station waypoints: %i" % (len(data_station_waypoints)))
     logging.debug("Landing waypoints: %i" % (len(landing_waypoints)))
+
+
 
     # Initialize and start mission
     mission = Mission(data_station_waypoints, landing_waypoints)

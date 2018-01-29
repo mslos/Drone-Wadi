@@ -33,7 +33,7 @@ class MissionPlanParser(object):
                     float(self.__data_waypoints[line][0]),
                     float(self.__data_waypoints[line][1]),
                     int(self.__data_waypoints[line][2]),
-                    self.__data_waypoints[line][3])
+                    str(self.__data_waypoints[line][3]))
                 data_stations.append(new_data_station)
 
         #  Raw latitude, longitude, and altitude for LANDING SEQUENCE translated to

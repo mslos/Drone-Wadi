@@ -7,7 +7,9 @@ This is the main navigation script for a data mule mission. This program spawns 
 import logging
 import time
 
-from Queue import Queue
+from collections import deque
+
+# from Queue import Queue
 
 from anaconda_avionics.microservices import Navigation
 
@@ -25,8 +27,8 @@ class Mission:
         self.__data_stations = _data_stations
         self.__landing_waypoints = _landing_waypoints
 
-        self.__data_stations_queue = Queue()
-        self.__data_stations_queue.put(self.__data_stations)
+        self.__data_stations_queue = deque(self.__data_stations)
+        # self.__data_stations_queue.put(self.__data_stations)
 
         self.__navigation = Navigation(self.__data_stations_queue, self.__landing_waypoints)
 
@@ -43,7 +45,7 @@ class Mission:
 
         self.__navigation.start()
 
-        while self.__navigation.isNavigationComplete():
+        while self.__navigation.isNavigationComplete:
             time.sleep(1)
 
         # Get final status of data stations

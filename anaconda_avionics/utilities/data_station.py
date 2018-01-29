@@ -6,10 +6,7 @@ class DataStation(LocationGlobalRelative): # pylint: disable=too-many-instance-a
     """
 
     def __init__(self, latitude, longitude, altitude, identity):
-        super(DataStation, self).__init__(latitude, longitude,)
-        self.lon = longitude
-        self.lat = latitude
-        self.alt = altitude
+        super(DataStation, self).__init__(latitude, longitude, altitude)
         self.identity = identity
         self.timeout = False
         self.drone_arrived = False

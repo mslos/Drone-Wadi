@@ -17,6 +17,14 @@ class SFTPClient(object):
     REMOTE_LOG_SOURCE = './data/logs/'                # Location relative to SFTP root directory where the data station log files are located
     LOCAL_LOG_DESTINATION = './data/logs/'          # Where downloaded data station logs will be kept
 
+    # Paramiko client configuration
+    PORT = 22
+    USE_GSS_API = False
+    DO_GSS_API_KEY_EXCHANGE = False
+
+    __host_key_type = None
+    __host_key = None
+
     __sftp = None                                       # Our SFTP client
     __transport = None                                  # Paramiko transport
 
@@ -24,12 +32,9 @@ class SFTPClient(object):
     __username = None
     __password = None
 
-    def __init__(self, _username, _password, _hostname):
+    isConnected = False
 
-        # Paramiko client configuration
-        UseGSSAPI = False  # enable GSS-API / SSPI authentication
-        DoGSSAPIKeyExchange = False
-        Port = 22   # Standard SSH port
+    def __init__(self, _username, _password, _hostname):
 
         # Update destination directories to include hostname for data differentiation
         self.LOCAL_FIELD_DATA_DESTINATION = './data/field/%s/' % (_hostname)
@@ -41,24 +46,27 @@ class SFTPClient(object):
         self.__password = _password
         self.__hostname = _hostname
 
-
-        # get host key, if we know one
-        hostkeytype = None
-        hostkey = None
-
         host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
 
         if self.__hostname in host_keys:
-            hostkeytype = host_keys[self.__hostname].keys()[0]
-            hostkey = host_keys[self.__hostname][hostkeytype]
+            self.__hostkeytype = host_keys[self.__hostname].keys()[0]
+            self.__hostkey = host_keys[self.__hostname][self.__hostkeytype]
 
+
+
+    def connect(self):
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
         logging.info("Connecting to data station... [hostname: %s]" % (self.__hostname))
 
+        # Timeout is handled by Navigation.
         try:
-            self.__transport = paramiko.Transport((self.__hostname, Port))
-            self.__transport.connect(hostkey, self.__username, self.__password, gss_host=socket.getfqdn(self.__hostname),
-                      gss_auth=UseGSSAPI, gss_kex=DoGSSAPIKeyExchange)
+            self.__transport = paramiko.Transport((self.__hostname, self.PORT))
+
+            self.__transport.connect(self.__host_key, self.__username, self.__password,
+                                     gss_host=socket.getfqdn(self.__hostname),
+                                     gss_auth = self.USE_GSS_API,
+                                     gss_kex = self.DO_GSS_API_KEY_EXCHANGE)
+
             self.__sftp = paramiko.SFTPClient.from_transport(self.__transport)
 
             logging.info("Connection established to data station: %s" % (self.__hostname))
@@ -67,7 +75,8 @@ class SFTPClient(object):
             try:
                 self.__sftp.mkdir(self.REMOTE_FIELD_DATA_SOURCE)
             except IOError:
-                logging.debug('{0} remote field data directory already exists'.format(self.REMOTE_FIELD_DATA_SOURCE))
+                logging.debug(
+                    '{0} remote field data directory already exists'.format(self.REMOTE_FIELD_DATA_SOURCE))
 
             # Ensure remote log directory exists
             try:
@@ -83,9 +92,11 @@ class SFTPClient(object):
             if not os.path.exists(self.LOCAL_LOG_DESTINATION):
                 os.makedirs(self.LOCAL_LOG_DESTINATION)
 
+            self.isConnected = True
+
         except Exception as e:
-            logging.warn('Connection failed.')
-            logging.debug('%s: %s' % (e.__class__, e))
+            logging.warn('Connection to data station %s failed' % (self.__hostname))
+            logging.debug(e)
             # traceback.print_exc()
 
 

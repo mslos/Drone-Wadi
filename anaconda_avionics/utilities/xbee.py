@@ -51,6 +51,10 @@ class XBee(object):
     # TODO: Make XBee not expect an integer identity, but still maintain small command size
     def sendCommand(self, command, identity=0, timeout=0):
 
+        # Immediately return False if in development and XBee not actually connected
+        if "DEVELOPMENT" in os.environ:
+            return False
+
         xbee_timer = Timer()
         while True:
             response = XBeeResponse()

@@ -4,6 +4,8 @@ import time
 import threading
 import logging
 
+from collections import deque
+
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
 from Queue import Empty
@@ -29,7 +31,6 @@ class Navigation(object):
     # Private variables
     # -----------------------
 
-    __data_stations = None          # List of data stations to be visited
     __xbee = None                   # XBee comm module
     __vehicle = None                # Dronekit vehicle reference
 
@@ -42,6 +43,10 @@ class Navigation(object):
     # -----------------------
 
     isNavigationComplete = False    # Allow Mission class to know when navigation has finished
+
+    # -----------------------
+    # Set up
+    # -----------------------
 
     def __init__(self, _data_stations_queue, _landing_waypoints):
         self.__data_stations_queue = _data_stations_queue
@@ -96,8 +101,8 @@ class Navigation(object):
         # Set up connection with Pixhawk autopilot
         if not "DEVELOPMENT" in os.environ: # When not in development mode, connect to real Pixhawk
             connection_string = "/dev/ttyS0"
-        else:  # in development mode, connect to plane over SITL (tcp:127.0.0.1:5760)
-            connection_string = "tcp:127.0.0.1:5760"
+        else:  # in development mode, connect to plane over SITL (tcp:127.0.0.1:5760) udp:127.0.0.1:14550
+            connection_string = "udp:127.0.0.1:14550"
 
         logging.debug('Connecting to vehicle on: %s' % connection_string)
 
@@ -148,13 +153,7 @@ class Navigation(object):
         #  AUTO and back into AUTO.
         logging.info("Adding new waypoint commands...")
 
-        # TODO: get rid of this clunky code segment
-        while True:
-            try:
-                cameras = data_stations_queue.get_nowait()
-                break
-            except Empty:
-                pass
+        cameras = list(data_stations_queue)
 
         for cam in cameras:
             logging.info('New Camera:\n%s' % cam.summary())
@@ -277,14 +276,14 @@ class Navigation(object):
 
         logging.info("Mission starting...")
 
-        cam_num = len(self.__data_stations)
+        cam_num = len(self.__data_stations_queue)
         land_num = len(self.__landing_waypoints)
 
         # Monitor takeoff progress
         logging.info("Taking off...")
         while self.__vehicle.commands.next == 1:
             current_altitude = self.__vehicle.location.global_relative_frame.alt
-            logging.debug("Current altitude: %s" % current_altitude)
+            logging.debug("Taking off: Current altitude: %s" % current_altitude)
             time.sleep(0.5)
 
         next_waypoint = self.__vehicle.commands.next
@@ -292,43 +291,48 @@ class Navigation(object):
         # Monitor mission progress and engage loiter when each camera trap is reached
         while self.__vehicle.commands.next <= cam_num + 1:
 
-            logging.info("En route to %s..." % (str(next_waypoint)))
-
             # Pop reference to data station being approached
-            current_data_station = self.__data_stations_queue.pop()
+            current_data_station = self.__data_stations_queue.popleft()
+
+            logging.info("En route to data station %s..." % (current_data_station.identity))
 
             # Broadcast request for data station to turn on while en route
-            self.__xbee.sendCommand('POWER_ON', identity=current_data_station.identity, timeout=6)
+            # TODO: uncomment this when XBee class is rewritten to not block
+            # self.__xbee.sendCommand('POWER_ON', identity=current_data_station.identity, timeout=6)
 
             # While en route to the next data station monitor distance
             while self.__vehicle.commands.next == next_waypoint:
 
                 # data_stations are indexed at 0, and commands are indexed at 1
                 # with the first reserved for takeoff. This is why we do [next_waypoint-2]
-                distance = self.get_distance_meters(self.__data_stations[next_waypoint - 2],
+                distance = self.get_distance_meters(current_data_station,
                                                     self.__vehicle.location.global_frame)
 
-                logging.debug("Distance to camera " + str(next_waypoint) + ": " + str(distance))
+                logging.debug("Distance to data station %s: %.2f m" % (current_data_station.identity, distance))
                 time.sleep(0.5)
 
-            logging.info("Arrived at data station")
+            logging.info("Arrived at data station [%s]" % current_data_station.identity)
+
+            logging.debug("Setting airspeed to AIRSPEED_SLOW: %.2f m/s" % self.AIRSPEED_SLOW)
+            self.__vehicle.airspeed = self.AIRSPEED_SLOW
 
             # Block until drone is in loiter mode
             logging.debug("Engaging LOITER mode...")
             while str(self.__vehicle.mode.name) != "LOITER":
                 self.__vehicle.mode = VehicleMode("LOITER")
-                self.__vehicle.airspeed = self.AIRSPEED_SLOW
 
             # Mark data station object as arrived
             current_data_station.drone_arrived = True
 
-            # Spawn download thread with reference to current_data_station
             download_worker = Download(current_data_station)
+            download_worker.connect()
+
+            # Spawn download thread with reference to current_data_station
             download_thread = threading.Thread(target=download_worker.start())
             download_thread.start()
 
             download_timer = Timer()
-            while True:
+            while True and download_worker.is_connected:
                 # Cancel download if time elapsed has exceeded predetermined timeout set above
                 if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT_SECONDS:
                     current_data_station.timeout = True
@@ -348,7 +352,8 @@ class Navigation(object):
 
             # Attempt to turn off camera trap
             logging.info("Sending XBee POWER_OFF command...")
-            self.__xbee.sendCommand('POWER_OFF', identity=current_data_station.identity, timeout=15)
+            # TODO: uncomment this when XBee is redone
+            # self.__xbee.sendCommand('POWER_OFF', identity=current_data_station.identity, timeout=15)
 
             # FIXME: Why wait, why not continue only when we know trap is off? Is there a way to know?
             time.sleep(15)  # wait 15 seconds to turn off camera trap
@@ -372,7 +377,8 @@ class Navigation(object):
         while self.__vehicle.commands.next < (land_num + cam_num):
             distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
                                            self.__vehicle.location.global_frame)
-            logging.debug("Distance to next landing waypoint %s: %s" % (str(next_waypoint), str(distance)))
+
+            logging.debug("Distance to data station %s: %.2f m" % (str(next_waypoint), distance))
             time.sleep(1)
 
         logging.info("Beginning final approach...")
@@ -381,7 +387,7 @@ class Navigation(object):
         current_altitude = self.__vehicle.location.global_relative_frame.alt
         while current_altitude >= 0.5:
             current_altitude = self.__vehicle.location.global_relative_frame.alt
-            logging.debug("Current altitude: %s" % str(current_altitude))
+            logging.debug("Landing: Current altitude: %.2f m" % current_altitude)
             time.sleep(1)
 
         logging.info('Mission complete')
