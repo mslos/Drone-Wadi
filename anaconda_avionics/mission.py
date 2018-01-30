@@ -43,9 +43,11 @@ class Mission:
            Start data retrieval mission
         """
 
+        # Run the mission
         self.__navigation.start()
 
-        while self.__navigation.isNavigationComplete:
+        # Wait until mission is over
+        while not self.__navigation.isNavigationComplete:
             time.sleep(1)
 
         # Get final status of data stations

@@ -11,11 +11,14 @@ import os
 
 class SFTPClient(object):
 
-    REMOTE_FIELD_DATA_SOURCE = './data/field/'        # Location relative to SFTP root directory where the field data files are located; current SFTP root from pi@cameratrap.local /home/pi/
-    LOCAL_FIELD_DATA_DESTINATION = './data/field/'  # Where downloaded data station field data will be kept
+    REMOTE_ROOT_DATA_DIRECTORY = './data/'
+    LOCAL_ROOT_DATA_DIRECTORY = './data/'
 
-    REMOTE_LOG_SOURCE = './data/logs/'                # Location relative to SFTP root directory where the data station log files are located
-    LOCAL_LOG_DESTINATION = './data/logs/'          # Where downloaded data station logs will be kept
+    REMOTE_FIELD_DATA_SOURCE = REMOTE_ROOT_DATA_DIRECTORY + 'field/'         # Location relative to SFTP root directory where the field data files are located; current SFTP root from pi@cameratrap.local /home/pi/
+    LOCAL_FIELD_DATA_DESTINATION = LOCAL_ROOT_DATA_DIRECTORY + 'field/'      # Where downloaded data station field data will be kept
+
+    REMOTE_LOG_SOURCE = REMOTE_ROOT_DATA_DIRECTORY+'logs/'                   # Location relative to SFTP root directory where the data station log files are located
+    LOCAL_LOG_DESTINATION = LOCAL_ROOT_DATA_DIRECTORY + 'logs/'              # Where downloaded data station logs will be kept
 
     # Paramiko client configuration
     PORT = 22
@@ -71,6 +74,13 @@ class SFTPClient(object):
 
             logging.info("Connection established to data station: %s" % (self.__hostname))
 
+            # Ensure remote root data directory exists
+            try:
+                self.__sftp.mkdir(self.REMOTE_ROOT_DATA_DIRECTORY)
+            except IOError:
+                logging.debug(
+                    '{0} remote root data directory already exists'.format(self.REMOTE_FIELD_DATA_SOURCE))
+
             # Ensure remote field data directory exists
             try:
                 self.__sftp.mkdir(self.REMOTE_FIELD_DATA_SOURCE)
@@ -83,6 +93,9 @@ class SFTPClient(object):
                 self.__sftp.mkdir(self.REMOTE_LOG_SOURCE)
             except IOError:
                 logging.debug('{0} remote log directory already exists'.format(self.REMOTE_LOG_SOURCE))
+
+            # `os.makedirs()` recursively creates entire file path so ./data/ is created in the process of creating
+            # local destination directory (./data/field/)
 
             # Ensure local field data directory exists
             if not os.path.exists(self.LOCAL_FIELD_DATA_DESTINATION):
@@ -105,6 +118,13 @@ class SFTPClient(object):
     # -----------------------
 
     def getRemoteFileList(self, remote_path):
+
+        # Ensure there's something to fetch
+        try:
+            self.__sftp.mkdir(remote_path)
+        except IOError:
+            logging.debug('{0} remote field data directory already exists'.format(remote_path))
+
         return self.__sftp.listdir(remote_path)
 
     def downloadFile(self, remote_path, local_destination, file_name):

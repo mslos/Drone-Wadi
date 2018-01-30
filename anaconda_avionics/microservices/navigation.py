@@ -8,7 +8,6 @@ from collections import deque
 
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
-from Queue import Empty
 
 from anaconda_avionics.microservices import Download
 from anaconda_avionics.utilities import Timer
@@ -195,28 +194,49 @@ class Navigation(object):
                          0,
                          0))
 
-        #  Approach runway
-        landing = landing_waypoints.pop()
-        logging.info("Adding runway approach waypoints...")
-        for waypoint in landing_waypoints:
-            logging.info('New Waypoint:\n%s' % waypoint.summary())
-            cmds.add(Command(0,
-                             0,
-                             0,
-                             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                             mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                             0,
-                             0,
-                             0,
-                             0,
-                             0,
-                             0,
-                             waypoint.lat,
-                             waypoint.lon,
-                             waypoint.alt))
+        # Loiter
+        logging.info("Adding landing loiter waypoint...")
+        loiter = landing_waypoints[0]
+        logging.info('Landing Loiter Waypoint:\n%s' % loiter.summary())
+        cmds.add(Command(0,
+                         0,
+                         0,
+                         mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                         mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT,
+                         0,
+                         0,
+                         1,
+                         75,
+                         0,
+                         1,
+                         loiter.lat,
+                         loiter.lon,
+                         loiter.alt))
+
+        # #  Approach runway
+        # landing = landing_waypoints.pop()
+        # logging.info("Adding runway approach waypoints...")
+        # for waypoint in landing_waypoints:
+        #     logging.info('New Waypoint:\n%s' % waypoint.summary())
+        #     cmds.add(Command(0,
+        #                      0,
+        #                      0,
+        #                      mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        #                      mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+        #                      0,
+        #                      0,
+        #                      0,
+        #                      0,
+        #                      0,
+        #                      0,
+        #                      waypoint.lat,
+        #                      waypoint.lon,
+        #                      waypoint.alt))
 
         # Execute landing operation
         logging.info("Adding landing command...")
+
+        landing = landing_waypoints[1]
         logging.info('Landing Target:\n%s' % landing.summary())
         cmds.add(Command(0,
                          0,
@@ -325,30 +345,34 @@ class Navigation(object):
             current_data_station.drone_arrived = True
 
             download_worker = Download(current_data_station)
-            download_worker.connect()
 
-            # Spawn download thread with reference to current_data_station
-            download_thread = threading.Thread(target=download_worker.start())
-            download_thread.start()
+            try:
+                download_worker.connect()
+                # Spawn download thread with reference to current_data_station
+                download_thread = threading.Thread(target=download_worker.start())
+                download_thread.start()
 
-            download_timer = Timer()
-            while True and download_worker.is_connected:
-                # Cancel download if time elapsed has exceeded predetermined timeout set above
-                if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT_SECONDS:
-                    current_data_station.timeout = True
-                    logging.warn("Download timeout: Download cancelled")
-                    break
+                download_timer = Timer()
+                while True and download_worker.is_connected:
+                    # Cancel download if time elapsed has exceeded predetermined timeout set above
+                    if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT_SECONDS:
+                        current_data_station.timeout = True
+                        logging.warn("Download timeout: Download cancelled")
+                        break
 
-                if current_data_station.download_complete is False:
-                    logging.debug("Waiting for data download...")
-                else:
-                    break
+                    if current_data_station.download_complete is False:
+                        logging.debug("Waiting for data download...")
+                    else:
+                        break
 
-                logging.debug("Time remaining before download timeout: %s"
-                              % (str(self.DOWNLOAD_TIMEOUT_SECONDS - download_timer.time_elapsed())))
+                    logging.debug("Time remaining before download timeout: %s"
+                                  % (str(self.DOWNLOAD_TIMEOUT_SECONDS - download_timer.time_elapsed())))
 
-                # Give download_thread as much of the computing power as possible to speed up download
-                time.sleep(3)
+                    # Give download_thread as much of the computing power as possible to speed up download
+                    time.sleep(3)
+
+            except Exception as e:
+                logging.error(e)
 
             # Attempt to turn off camera trap
             logging.info("Sending XBee POWER_OFF command...")
@@ -356,7 +380,7 @@ class Navigation(object):
             # self.__xbee.sendCommand('POWER_OFF', identity=current_data_station.identity, timeout=15)
 
             # FIXME: Why wait, why not continue only when we know trap is off? Is there a way to know?
-            time.sleep(15)  # wait 15 seconds to turn off camera trap
+            # time.sleep(15)  # wait 15 seconds to turn off camera trap
 
             logging.info("Download over. Continuing mission...")
 
@@ -365,6 +389,7 @@ class Navigation(object):
             while str(self.__vehicle.mode.name) != "AUTO":
                 self.__vehicle.mode = VehicleMode("AUTO")
                 self.__vehicle.airspeed = self.AIRSPEED_FAST
+                time.sleep(1)
 
             logging.info("Airspeed set to %.2f m/s" % float(self.AIRSPEED_FAST))
 
@@ -374,12 +399,12 @@ class Navigation(object):
         logging.info("Beginning landing sequence...")
 
         # Begin stepping through the landing approach waypoints
-        while self.__vehicle.commands.next < (land_num + cam_num):
-            distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
-                                           self.__vehicle.location.global_frame)
-
-            logging.debug("Distance to data station %s: %.2f m" % (str(next_waypoint), distance))
-            time.sleep(1)
+        # while self.__vehicle.commands.next < (land_num + cam_num):
+        #     distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
+        #                                    self.__vehicle.location.global_frame)
+        #
+        #     logging.debug("Distance to data station %s: %.2f m" % (str(next_waypoint), distance))
+        #     time.sleep(1)
 
         logging.info("Beginning final approach...")
 
@@ -390,5 +415,6 @@ class Navigation(object):
             logging.debug("Landing: Current altitude: %.2f m" % current_altitude)
             time.sleep(1)
 
-        logging.info('Mission complete')
         self.isNavigationComplete = True
+
+        logging.info('Mission complete')

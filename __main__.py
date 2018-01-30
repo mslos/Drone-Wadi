@@ -50,8 +50,6 @@ def main():
     logging.debug("Data station waypoints: %i" % (len(data_station_waypoints)))
     logging.debug("Landing waypoints: %i" % (len(landing_waypoints)))
 
-
-
     # Initialize and start mission
     mission = Mission(data_station_waypoints, landing_waypoints)
 
