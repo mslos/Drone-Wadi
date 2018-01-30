@@ -14,14 +14,14 @@ def main():
     # Set up logging [Logging levels in order of seriousness: DEBUG < INFO < WARNING < ERROR < CRITICAL]
     logging.basicConfig(filename='flight-log.log',
                         level=logging.DEBUG,
-                        format='%(asctime)s.%(msecs)03d %(levelname)s %(name)s\t%(message)s',
+                        format='%(asctime)s.%(msecs)03d %(levelname)s \t%(message)s',
                         datefmt="%d %b %Y %H:%M:%S")
 
     # Log to STDOUT
     # TODO: only log to stdout in debug mode
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(levelname)s %(message)s')
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
 
