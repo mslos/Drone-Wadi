@@ -6,16 +6,19 @@ from anaconda_avionics.utilities import Timer
 
 class Download(object):
 
-    CONNECTION_TIMEOUT_SECONDS = 20
+    CONNECTION_TIMEOUT_SECONDS = 0
+    READ_WRITE_TIMEOUT_SECONDS = 0
 
     __sftp = None
     __data_station = None
 
     is_connected = False
 
-    def __init__(self, _data_station):
+    def __init__(self, _data_station, _connection_timeout=10, _read_write_timeout=10):
 
         self.__data_station = _data_station # Reference to DataStation object monitored by Navigation
+        self.CONNECTION_TIMEOUT_SECONDS = _connection_timeout
+        self.READ_WRITE_TIMEOUT_SECONDS = _read_write_timeout
 
         # TODO: change this to dynamically distribute required certificate
         self.__sftp = SFTPClient('pi', 'raspberry', str(self.__data_station.identity))
@@ -29,7 +32,7 @@ class Download(object):
                 logging.error("Connection to data station %s failed permanently" % (self.__data_station.identity))
                 break
 
-            # Sets low level SSH socket read/write timeout for all operations (listdir, get,
+            # Sets low level SSH socket read/write timeout for all operations (listdir, get, etc)
             self.__sftp.connect(timeout=self.CONNECTION_TIMEOUT_SECONDS)
 
             time.sleep(1)

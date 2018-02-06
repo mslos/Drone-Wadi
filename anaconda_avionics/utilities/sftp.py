@@ -62,7 +62,11 @@ class SFTPClient(object):
 
         # Timeout is handled by Navigation.
         try:
-            self.__transport = paramiko.Transport((self.__hostname, self.PORT))
+            self.__transport = paramiko.Transport((self.__hostname, self.PORT),
+                                                  default_window_size=2147483647) # Speeds up download speed
+
+            # Compress files on data station before sending over Wi-Fi to drone
+            self.__transport.use_compression()
 
             self.__transport.connect(self.__host_key, self.__username, self.__password,
                                      gss_host=socket.getfqdn(self.__hostname),
@@ -189,6 +193,9 @@ class SFTPClient(object):
         """
         Delete all log data that has successfully been downloaded
         """
+        # TODO: only delete files that 100% downloaded.
+        # If connection times out, some file names may exist, but the files are empty.
+
         logging.debug("Beginning data station log removal")
         for file_name in os.listdir(self.LOCAL_FIELD_DATA_DESTINATION):
             self.deleteFile(self.REMOTE_FIELD_DATA_SOURCE, file_name)

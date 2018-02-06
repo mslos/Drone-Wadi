@@ -8,7 +8,6 @@ from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
 
 from anaconda_avionics.microservices import Download
-from anaconda_avionics.utilities import Timer
 from anaconda_avionics.utilities import XBee
 
 class Navigation(object):
@@ -21,8 +20,10 @@ class Navigation(object):
     AIRSPEED_SLOW = 10
     AIRSPEED_MED = 13
     AIRSPEED_FAST = 16
-    DOWNLOAD_TIMEOUT_SECONDS = 60
 
+    OVERALL_DOWNLOAD_TIMEOUT_SECONDS = 60
+    DOWNLOAD_CONNECTION_TIMEOUT_SECONDS = 20
+    DOWNLOAD_READ_WRITE_TIMEOUT_SECONDS = 20
 
     # -----------------------
     # Private variables
@@ -295,7 +296,6 @@ class Navigation(object):
         logging.info("Mission starting...")
 
         cam_num = len(self.__data_stations_queue)
-        land_num = len(self.__landing_waypoints)
 
         # Monitor takeoff progress
         logging.info("Taking off...")
@@ -343,7 +343,9 @@ class Navigation(object):
             current_data_station.drone_arrived = True
 
             # Create a download worker with reference to current_data_station
-            download_worker = Download(current_data_station)
+            download_worker = Download(current_data_station,
+                                       self.DOWNLOAD_CONNECTION_TIMEOUT_SECONDS,
+                                       self.DOWNLOAD_READ_WRITE_TIMEOUT_SECONDS)
 
             try:
                 # This throws an error if the connection times out
@@ -354,7 +356,7 @@ class Navigation(object):
                 download_thread.start()
 
                 # Attempt to join the thread after timeout, if still alive the download timed out
-                download_thread.join(self.DOWNLOAD_TIMEOUT_SECONDS)
+                download_thread.join(self.OVERALL_DOWNLOAD_TIMEOUT_SECONDS)
 
                 if download_thread.is_alive():
                     logging.info("Download timeout: Download cancelled")
