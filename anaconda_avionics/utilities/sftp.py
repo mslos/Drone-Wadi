@@ -35,7 +35,7 @@ class SFTPClient(object):
     __username = None
     __password = None
 
-    isConnected = False
+    is_connected = False
 
     def __init__(self, _username, _password, _hostname):
 
@@ -56,8 +56,7 @@ class SFTPClient(object):
             self.__hostkey = host_keys[self.__hostname][self.__hostkeytype]
 
 
-
-    def connect(self):
+    def connect(self, timeout=60):
         # now, connect and use paramiko Transport to negotiate SSH2 across the connection
         logging.info("Connecting to data station... [hostname: %s]" % (self.__hostname))
 
@@ -71,6 +70,8 @@ class SFTPClient(object):
                                      gss_kex = self.DO_GSS_API_KEY_EXCHANGE)
 
             self.__sftp = paramiko.SFTPClient.from_transport(self.__transport)
+
+            self.__sftp.get_channel().settimeout(timeout) # Timeout in seconds on read/write operations on underlying SSH channel
 
             logging.info("Connection established to data station: %s" % (self.__hostname))
 
@@ -105,16 +106,15 @@ class SFTPClient(object):
             if not os.path.exists(self.LOCAL_LOG_DESTINATION):
                 os.makedirs(self.LOCAL_LOG_DESTINATION)
 
-            self.isConnected = True
+            self.is_connected = True
 
         except Exception as e:
             logging.warn('Connection to data station %s failed' % (self.__hostname))
             logging.debug(e)
-            # traceback.print_exc()
 
 
     # -----------------------
-    # General utility methods
+    # General utility methods with robust connection timeout handling
     # -----------------------
 
     def getRemoteFileList(self, remote_path):
@@ -124,8 +124,18 @@ class SFTPClient(object):
             self.__sftp.mkdir(remote_path)
         except IOError:
             logging.debug('{0} remote field data directory already exists'.format(remote_path))
+        except socket.timeout:
+            logging.error("Listing remote directories timeout")
 
-        return self.__sftp.listdir(remote_path)
+        directory_contents = []
+        try:
+            directory_contents = self.__sftp.listdir(remote_path)
+        except IOError as e:
+            logging.error(e)
+        except socket.timeout:
+            logging.error("Listing remote directories timeout")
+
+        return directory_contents
 
     def downloadFile(self, remote_path, local_destination, file_name):
         """
@@ -136,6 +146,8 @@ class SFTPClient(object):
             self.__sftp.get(remote_path+file_name, local_destination+file_name)
         except IOError as e:
             logging.error(e)
+        except socket.timeout:
+            logging.error("Listing remote directories timeout")
 
     def deleteFile(self, remote_path, file_name):
         """
@@ -146,6 +158,8 @@ class SFTPClient(object):
             self.__sftp.remove(remote_path+file_name)
         except IOError as e:
             logging.error(e)
+        except socket.timeout:
+            logging.error("Listing remote directories timeout")
 
     # NOTICE: Make sure to close the SFTP connection after download is complete
     def close(self):

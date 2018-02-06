@@ -4,8 +4,6 @@ import time
 import threading
 import logging
 
-from collections import deque
-
 from pymavlink import mavutil
 from dronekit import connect, VehicleMode, Command
 
@@ -344,32 +342,24 @@ class Navigation(object):
             # Mark data station object as arrived
             current_data_station.drone_arrived = True
 
+            # Create a download worker with reference to current_data_station
             download_worker = Download(current_data_station)
 
             try:
+                # This throws an error if the connection times out
                 download_worker.connect()
-                # Spawn download thread with reference to current_data_station
-                download_thread = threading.Thread(target=download_worker.start())
+
+                # Spawn download thread
+                download_thread = threading.Thread(target=download_worker.start)
                 download_thread.start()
 
-                download_timer = Timer()
-                while True and download_worker.is_connected:
-                    # Cancel download if time elapsed has exceeded predetermined timeout set above
-                    if download_timer.time_elapsed() > self.DOWNLOAD_TIMEOUT_SECONDS:
-                        current_data_station.timeout = True
-                        logging.warn("Download timeout: Download cancelled")
-                        break
+                # Attempt to join the thread after timeout, if still alive the download timed out
+                download_thread.join(self.DOWNLOAD_TIMEOUT_SECONDS)
 
-                    if current_data_station.download_complete is False:
-                        logging.debug("Waiting for data download...")
-                    else:
-                        break
-
-                    logging.debug("Time remaining before download timeout: %s"
-                                  % (str(self.DOWNLOAD_TIMEOUT_SECONDS - download_timer.time_elapsed())))
-
-                    # Give download_thread as much of the computing power as possible to speed up download
-                    time.sleep(3)
+                if download_thread.is_alive():
+                    logging.info("Download timeout: Download cancelled")
+                else:
+                    logging.info("Download complete")
 
             except Exception as e:
                 logging.error(e)
@@ -382,7 +372,7 @@ class Navigation(object):
             # FIXME: Why wait, why not continue only when we know trap is off? Is there a way to know?
             # time.sleep(15)  # wait 15 seconds to turn off camera trap
 
-            logging.info("Download over. Continuing mission...")
+            logging.info("Continuing mission...")
 
             # Change back from LOITER to AUTO to continue previously uploaded mission
             logging.debug("Engaging AUTO mode...")
@@ -395,18 +385,9 @@ class Navigation(object):
 
             next_waypoint = self.__vehicle.commands.next
 
-        # Return to home
+        # Return to home using fixed-wing landing sequence
+        # (loiter to altitude and then begin final approach on tangent heading)
         logging.info("Beginning landing sequence...")
-
-        # Begin stepping through the landing approach waypoints
-        # while self.__vehicle.commands.next < (land_num + cam_num):
-        #     distance = self.get_distance_meters(self.__landing_waypoints[next_waypoint - 1],
-        #                                    self.__vehicle.location.global_frame)
-        #
-        #     logging.debug("Distance to data station %s: %.2f m" % (str(next_waypoint), distance))
-        #     time.sleep(1)
-
-        logging.info("Beginning final approach...")
 
         # Monitor final approach to runway
         current_altitude = self.__vehicle.location.global_relative_frame.alt

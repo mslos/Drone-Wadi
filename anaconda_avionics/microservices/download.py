@@ -6,7 +6,7 @@ from anaconda_avionics.utilities import Timer
 
 class Download(object):
 
-    CONNECTION_TIMEOUT_SECONDS = 30
+    CONNECTION_TIMEOUT_SECONDS = 20
 
     __sftp = None
     __data_station = None
@@ -20,32 +20,30 @@ class Download(object):
         # TODO: change this to dynamically distribute required certificate
         self.__sftp = SFTPClient('pi', 'raspberry', str(self.__data_station.identity))
 
-
-
-        # # After connection made
-        # self.start()
-
     def connect(self):
-        # Establish connection with camera trap
+        # Try to connect until SFTP client is connected or timeout event happens
         data_station_connection_timer = Timer()
-        while True:
-            try:
-                if data_station_connection_timer.time_elapsed() > self.CONNECTION_TIMEOUT_SECONDS:
-                    logging.error("Connection to data station %s failed permanently" % (self.__data_station.identity))
-                    break
+        while not self.__sftp.is_connected:
 
-                self.__sftp.connect()
-                self.is_connected = True
+            if data_station_connection_timer.time_elapsed() > self.CONNECTION_TIMEOUT_SECONDS:
+                logging.error("Connection to data station %s failed permanently" % (self.__data_station.identity))
                 break
 
-            except Exception as e:
-                logging.warn(e)
+            # Sets low level SSH socket read/write timeout for all operations (listdir, get,
+            self.__sftp.connect(timeout=self.CONNECTION_TIMEOUT_SECONDS)
 
             time.sleep(1)
 
+        # Whatever the status of SFTP connection after this while loop runs
+        self.is_connected = self.__sftp.is_connected
+
+        # Throw an error to tell navigation to continue on
+        if not self.is_connected:
+            raise Exception("Connection Timeout")
+
     def start(self):
         """
-        For desired camera trap:
+        For desired data station:
             1) Download field data and data station logs to drone
             2) Delete successfully transferred field data and logs from data station
         """

@@ -20,7 +20,7 @@ def main():
     # Log to STDOUT
     # TODO: only log to stdout in debug mode
     ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(levelname)s %(message)s')
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
