@@ -3,29 +3,23 @@ import time
 import logging
 import os
 
-from anaconda_avionics.utilities import Timer
-
-class XBeeResponse(object):
-
-    message = None
-    command = None
-
-    def __init__(self):
-        pass
-
 
 class XBee(object):
 
-    xbee_port = None
-    encode = None
-    decode = None
+    def __init__(self, serial_port="/dev/ttyUSB0"):
 
-    def __init__(self):
+        self.xbee_port = None
+        self.encode = None
+        self.decode = None
+        self.data_station_idens = None
+
+        self.preamble_out = ['s', 't', 'e', 'e', 't']
+        self.preamble_in = ['c', 'a', 't']
 
         while True:
             try:
                 if not "DEVELOPMENT" in os.environ: # Don't connect to XBee while in development
-                    self.xbee_port = serial.Serial("/dev/ttyUSB0", 9600, timeout=5)
+                    self.xbee_port = serial.Serial(serial_port, 9600, timeout=5)
                     logging.info("Connected to XBee")
                 else:
                     logging.info("In development mode, not connecting to XBee")
@@ -36,44 +30,76 @@ class XBee(object):
 
         # TODO: make single dictionary
         self.encode = {
-            'POWER_ON' : 0,
-            'POWER_OFF' : 1,
-            'POWER_STATUS' : 2,
-            'IDENTIFY' : 3
+            'POWER_ON' : '1',
+            'POWER_OFF' : '2',
+            'EXTEND_TIME' : '3'
         }
         self.decode = {
-            0 : 'POWER_ON',
-            1 : 'POWER_OFF',
-            2 : 'POWER_STATUS',
-            3 : 'IDENTIFY'
+            '1' : 'POWER_ON',
+            '2' : 'POWER_OFF',
+            '3' : 'EXTEND_TIME'
         }
 
-    # TODO: Make XBee not expect an integer identity, but still maintain small command size
-    def sendCommand(self, command, identity=0, timeout=0):
+        self.data_station_idens = self.read_iden_map()
+
+    def read_iden_map(self):
+        return {
+            'street_cat' : '01',
+            'demon_cat' : '02'
+        }
+
+    def send_command(self, identity, command):
 
         # Immediately return False if in development and XBee not actually connected
         if "DEVELOPMENT" in os.environ:
             return False
 
-        xbee_timer = Timer()
-        while True:
-            response = XBeeResponse()
+        self.xbee_port.write(self.preamble_out)
 
-            # Send command, addressed to correct identity, through serial port
-            self.xbee_port.write(identity)
-            self.xbee_port.write(self.encode[command])
+        self.xbee_port.write(self.data_station_idens[identity])
 
-            # Try to read the serial port (2 bytes), timeout for read = 5s
-            response_raw = self.xbee_port.read(2)
+        self.xbee_port.write(self.encode[command])
 
-            # If some response has come back from the data station
-            if response_raw:
-                response.message = self.decode[response_raw[0]]
+    def acknowledge(self, identity, command):
 
-                # Check to see if we got the desired response
-                if (response.message == identity or identity == 0) and response.command == command:
-                    return response
+        iden_match = False
+        preamble_success = False
+        preamble_count = 0
+        iden_count = 0
 
-            # Check for timeout
-            if (xbee_timer.time_elapsed() > timeout and timeout != 0):
-                return False
+        identity_code = self.data_station_idens[identity]
+        command_code = self.encode[command]
+
+        while (self.xbee_port.in_waiting > 0):
+            incomming_byte = self.xbee_port.read()
+            print incomming_byte
+            return True
+
+            if (iden_match == True):
+                return (incomming_byte == command_code)
+
+            elif (preamble_success == True):
+                if (incomming_byte == identity_code[iden_count]):
+                    iden_count += 1
+                else:
+                    preamble_success = False
+                    preamble_count = 0
+
+                iden_match = (iden_count == 2);
+
+            elif (incomming_byte == self.preamble_in[preamble_count]):
+                preamble_count+=1;
+                preamble_success = (preamble_count == 3);
+
+            else:
+                gate = 0;
+
+        return False
+
+if __name__ == '__main__':
+    xBee = XBee()
+    while True:
+        xBee.send_command('street_cat', 'POWER_ON')
+        if (xBee.acknowledge('street_cat', 'POWER_ON')):
+            print 'yay'
+        time.sleep(0.5)
