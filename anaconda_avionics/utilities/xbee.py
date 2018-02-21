@@ -13,7 +13,7 @@ class XBee(object):
         self.decode = None
         self.data_station_idens = None
 
-        self.preamble_out = ['s', 't', 'e', 'e', 't']
+        self.preamble_out = ['s', 't', 'r', 'e', 'e', 't']
         self.preamble_in = ['c', 'a', 't']
 
         while True:
@@ -50,56 +50,61 @@ class XBee(object):
 
     def send_command(self, identity, command):
 
-        # Immediately return False if in development and XBee not actually connected
+        # Immediately return False if in development (XBee not actually connected)
         if "DEVELOPMENT" in os.environ:
             return False
 
+        logging.debug("xBee port write: %s" % self.preamble_out)
         self.xbee_port.write(self.preamble_out)
 
+        logging.debug("xBee port write: %s" % self.data_station_idens[identity])
         self.xbee_port.write(self.data_station_idens[identity])
 
+        logging.debug("xBee port write: %s" % self.encode[command])
         self.xbee_port.write(self.encode[command])
 
     def acknowledge(self, identity, command):
+        """
+        Called after command is sent
+        """
 
         iden_match = False
+        identity_index = 0
+
         preamble_success = False
-        preamble_count = 0
-        iden_count = 0
+        preamble_index = 0
 
         identity_code = self.data_station_idens[identity]
         command_code = self.encode[command]
 
-        while (self.xbee_port.in_waiting > 0):
-            incomming_byte = self.xbee_port.read()
-            print incomming_byte
-            return True
+        while (self.xbee_port.in_waiting > 0): # There's something in the XBee buffer
+            incoming_byte = self.xbee_port.read() # Read a byte at a time
+            logging.debug("XBee incoming byte: %s" % incoming_byte)
 
+            # Third pass: Read command
             if (iden_match == True):
-                return (incomming_byte == command_code)
+                return (incoming_byte == command_code)
 
+            # Second pass: Check for identity match
             elif (preamble_success == True):
-                if (incomming_byte == identity_code[iden_count]):
-                    iden_count += 1
+                if (incoming_byte == identity_code[identity_index]):
+                    identity_index += 1
                 else:
                     preamble_success = False
-                    preamble_count = 0
+                    preamble_index = 0
 
-                iden_match = (iden_count == 2);
+                iden_match = (identity_index == 2)
 
-            elif (incomming_byte == self.preamble_in[preamble_count]):
-                preamble_count+=1;
-                preamble_success = (preamble_count == 3);
+            # First pass: Check for preamble match
+            elif (incoming_byte == self.preamble_in[preamble_index]):
+                preamble_index+=1
+                preamble_success = (preamble_index == 3)
 
+            # Reset
             else:
-                gate = 0;
+                iden_match = False
+                preamble_success = False
+                preamble_index = 0
+                identity_index = 0
 
-        return False
-
-if __name__ == '__main__':
-    xBee = XBee()
-    while True:
-        xBee.send_command('street_cat', 'POWER_ON')
-        if (xBee.acknowledge('street_cat', 'POWER_ON')):
-            print 'yay'
-        time.sleep(0.5)
+        return False # Unsuccessful ACK
