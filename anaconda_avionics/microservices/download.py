@@ -1,6 +1,8 @@
 import logging
 import time
 
+import os
+
 from anaconda_avionics.utilities import SFTPClient
 from anaconda_avionics.utilities import Timer
 
@@ -18,7 +20,7 @@ class Download(object):
 
         self.__data_station = _data_station # Reference to DataStation object monitored by Navigation
         self.CONNECTION_TIMEOUT_SECONDS = _connection_timeout
-        self.READ_WRITE_TIMEOUT_SECONDS = _read_write_timeout
+        self.READ_WRITE_TIMEOUT_SECONDS = 2
 
         # TODO: change this to dynamically distribute required certificate
         self.__sftp = SFTPClient('pi', 'raspberry', str(self.__data_station.identity))
@@ -50,6 +52,7 @@ class Download(object):
             1) Download field data and data station logs to drone
             2) Delete successfully transferred field data and logs from data station
         """
+
         logging.debug("Beginning download...")
         self.__data_station.download_started = True
 

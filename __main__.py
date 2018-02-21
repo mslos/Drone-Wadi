@@ -1,16 +1,16 @@
 import argparse
 import logging
 import sys
-
-from anaconda_avionics.utilities import SFTPClient
+import time
 
 from anaconda_avionics import Mission
 from anaconda_avionics.utilities import MissionPlanParser
+from anaconda_avionics.utilities import XBee
 
 # TODO: parse waypoints here and pass to mission to keep mission waypoint agnostic
 # TODO: long-term -- automatically start and wait for mission upload from QGroundControl
 
-def main():
+def setup_logging():
     # Set up logging [Logging levels in order of seriousness: DEBUG < INFO < WARNING < ERROR < CRITICAL]
     logging.basicConfig(filename='flight-log.log',
                         level=logging.DEBUG,
@@ -25,9 +25,19 @@ def main():
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
 
+def test_xbee():
+    xBee = XBee(serial_port="/dev/cu.usbserial-DN00OLOU")
+    while True:
+        xBee.send_command('street_cat', 'POWER_ON')
+        if (xBee.acknowledge('street_cat', 'POWER_ON')):
+            logging.debug("Success")
+            break
+        time.sleep(0.5)
+
+def main():
+
     logging.info('\n\n-----------------------------------------')
     logging.info('Mission started')
-
 
     # Begin extraction of waypoints from CSV file
     logging.debug("Beginning waypoint extraction...")
@@ -56,6 +66,8 @@ def main():
     mission.log_data_station_status()
     mission.start()
 
-
 if __name__ == "__main__":
-    main()
+    setup_logging()
+    test_xbee()
+
+    #main()

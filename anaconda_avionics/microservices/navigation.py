@@ -359,6 +359,7 @@ class Navigation(object):
                 download_thread.join(self.OVERALL_DOWNLOAD_TIMEOUT_SECONDS)
 
                 if download_thread.is_alive():
+                    current_data_station.timeout = True
                     logging.info("Download timeout: Download cancelled")
                 else:
                     logging.info("Download complete")
