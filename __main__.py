@@ -1,11 +1,9 @@
 import argparse
 import logging
 import sys
-import time
 
-from anaconda_avionics import Mission
-from anaconda_avionics.utilities import MissionPlanParser
-from anaconda_avionics.utilities import XBee
+from anaconda_avionics.mission import Mission
+from anaconda_avionics.utilities.mission_plan_parser import MissionPlanParser
 
 # TODO: parse waypoints here and pass to mission to keep mission waypoint agnostic
 # TODO: long-term -- automatically start and wait for mission upload from QGroundControl
@@ -24,15 +22,6 @@ def setup_logging():
     formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(levelname)s %(message)s')
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
-
-def test_xbee():
-    xBee = XBee(serial_port="/dev/cu.usbserial-DN00OLOU")
-    while True:
-        xBee.send_command('street_cat', 'POWER_ON')
-        if (xBee.acknowledge('street_cat', 'POWER_ON')):
-            logging.debug("Success")
-            break
-        time.sleep(0.5)
 
 def main():
 
@@ -68,6 +57,4 @@ def main():
 
 if __name__ == "__main__":
     setup_logging()
-    test_xbee()
-
-    #main()
+    main()
