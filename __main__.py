@@ -6,7 +6,7 @@ from anaconda_avionics.mission import Mission
 from anaconda_avionics.utilities.mission_plan_parser import MissionPlanParser
 
 # TODO: parse waypoints here and pass to mission to keep mission waypoint agnostic
-# TODO: long-term -- automatically start and wait for mission upload from QGroundControl
+# TODO: long-term -- automatically start avionics on system boot and wait for mission upload from QGroundControl or from USB insertion
 
 def setup_logging():
     # Set up logging [Logging levels in order of seriousness: DEBUG < INFO < WARNING < ERROR < CRITICAL]
@@ -16,7 +16,7 @@ def setup_logging():
                         datefmt="%d %b %Y %H:%M:%S")
 
     # Log to STDOUT
-    # TODO: only log to stdout in debug mode
+    # TODO: only log to stdout in debug mode to speed things up
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(levelname)s %(message)s')
