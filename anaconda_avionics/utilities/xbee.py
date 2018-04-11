@@ -19,7 +19,7 @@ class XBee(object):
         while True:
             try:
                 if not "DEVELOPMENT" in os.environ: # Don't connect to XBee while in development
-                    self.xbee_port = serial.Serial(serial_port, 9600, timeout=5)
+                    self.xbee_port = serial.Serial(serial_port, 57600, timeout=5)
                     logging.info("Connected to XBee")
                 else:
                     logging.info("In development mode, not connecting to XBee")
@@ -32,12 +32,14 @@ class XBee(object):
         self.encode = {
             'POWER_ON' : '1',
             'POWER_OFF' : '2',
-            'EXTEND_TIME' : '3'
+            'EXTEND_TIME' : '3',
+            'RESET_ID' : '4'
         }
         self.decode = {
             '1' : 'POWER_ON',
             '2' : 'POWER_OFF',
-            '3' : 'EXTEND_TIME'
+            '3' : 'EXTEND_TIME',
+            '4' : 'RESET_ID',
         }
 
         self.data_station_idens = self.read_iden_map()
@@ -62,6 +64,10 @@ class XBee(object):
 
         logging.debug("xBee port write: %s" % self.encode[command])
         self.xbee_port.write(self.encode[command])
+
+    def change_id(self, identity, new_id):
+        self.send_command(identity, 'RESET_ID')
+        self.xbee_port.write('<'+new_id+'>')
 
     def acknowledge(self, identity, command):
         """
@@ -108,3 +114,20 @@ class XBee(object):
                 identity_index = 0
 
         return False # Unsuccessful ACK
+
+if __name__ == "__main__":
+    serial_port = raw_input("Enter serial port: ")
+    xbee = XBee(serial_port)
+    while True:
+        try:
+            command = raw_input("Enter Command \nPOWER_ON: 1\nPOWER_OFF: 2\nEXTEND_TIME: 3\nRESET_ID: 4\nCommand: ")
+            try:
+                if (command == '4'):
+                    new_id = raw_input("New ID: ")
+                    xbee.change_id('street_cat', new_id)
+                else:
+                    xbee.send_command('street_cat', xbee.decode[command])
+            except KeyError:
+                pass
+        except KeyboardInterrupt:
+            xbee.xbee_port.close()
