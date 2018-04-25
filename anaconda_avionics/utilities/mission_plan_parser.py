@@ -53,6 +53,10 @@ class MissionPlanParser(object):
                 new_waypoint = LandingWaypoint(cmd_index, cmd.x, cmd.y, cmd.z)
                 self._landing_waypoints.append(new_waypoint)
 
+            elif (cmd.command == 31): # 31 corresponds to MAV_CMD_NAV_LOITER_TO_ALT	
+                new_waypoint = LandingWaypoint(cmd_index, cmd.x, cmd.y, cmd.z)
+                self._landing_waypoints.append(new_waypoint)
+
             elif (cmd.command == 201): # corresponds to a data station! MAV_CMD_DO_SET_ROI
                 new_data_station = DataStation(cmd.x, cmd.y, cmd.z, cmd.param4)
                 self._data_stations.append(new_data_station)
