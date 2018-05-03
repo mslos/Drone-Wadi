@@ -12,7 +12,7 @@ import os
 class SFTPClient(object):
 
     REMOTE_ROOT_DATA_DIRECTORY = './data/'
-    LOCAL_ROOT_DATA_DIRECTORY = './data/'
+    LOCAL_ROOT_DATA_DIRECTORY = '/Volumes/MissionMule/'
 
     REMOTE_FIELD_DATA_SOURCE = REMOTE_ROOT_DATA_DIRECTORY + 'field/'         # Location relative to SFTP root directory where the field data files are located; current SFTP root from pi@cameratrap.local /home/pi/
     LOCAL_FIELD_DATA_DESTINATION = LOCAL_ROOT_DATA_DIRECTORY + 'field/'      # Where downloaded data station field data will be kept
@@ -40,8 +40,8 @@ class SFTPClient(object):
     def __init__(self, _username, _password, _hostname):
 
         # Update destination directories to include hostname for data differentiation
-        self.LOCAL_FIELD_DATA_DESTINATION = './data/field/%s/' % (_hostname)
-        self.LOCAL_LOG_DESTINATION = './data/logs/%s/' % (_hostname)
+        self.LOCAL_FIELD_DATA_DESTINATION = '%s/%s/' % (self.LOCAL_FIELD_DATA_DESTINATION, _hostname)
+        self.LOCAL_LOG_DESTINATION = '%s/%s/' % (self.LOCAL_LOG_DESTINATION, _hostname)
 
         # TODO: change from password to public key cryptography
         # Login credentials
