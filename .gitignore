@@ -1,5 +1,5 @@
 .DS_Store
-.idea/
+.idea/*
 data/
 *.log
 
@@ -107,4 +107,3 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
