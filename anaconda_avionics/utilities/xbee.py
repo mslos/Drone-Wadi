@@ -12,6 +12,7 @@ class XBee(object):
         self.encode = None
         self.decode = None
         self.data_station_idens = None
+        self.timeout = 360 # seconds
 
         self.preamble_out = ['s', 't', 'r', 'e', 'e', 't']
         self.preamble_in = ['c', 'a', 't']
@@ -19,7 +20,7 @@ class XBee(object):
         while True:
             try:
                 if not "DEVELOPMENT" in os.environ: # Don't connect to XBee while in development
-                    self.xbee_port = serial.Serial(serial_port, 9600, timeout=5)
+                    self.xbee_port = serial.Serial(serial_port, 57600, timeout=5)
                     logging.info("Connected to XBee")
                 else:
                     logging.info("In development mode, not connecting to XBee")
@@ -30,14 +31,18 @@ class XBee(object):
 
         # TODO: make single dictionary
         self.encode = {
-            'POWER_ON' : '1',
-            'POWER_OFF' : '2',
-            'EXTEND_TIME' : '3'
+            'POWER_ON'       :  '1',
+            'POWER_OFF'      :  '2',
+            'EXTEND_TIME'    :  '3',
+            'RESET_ID'       :  '4',
+            'REQUEST_GPS'    :  '5',
         }
         self.decode = {
             '1' : 'POWER_ON',
             '2' : 'POWER_OFF',
-            '3' : 'EXTEND_TIME'
+            '3' : 'EXTEND_TIME',
+            '4' : 'RESET_ID',
+            '5' : 'REQUEST_GPS',
         }
 
         self.data_station_idens = self.read_iden_map()
@@ -62,6 +67,38 @@ class XBee(object):
 
         logging.debug("xBee port write: %s" % self.encode[command])
         self.xbee_port.write(self.encode[command])
+
+    def change_id(self, identity, new_id):
+        self.send_command(identity, 'RESET_ID')
+        self.xbee_port.write('<'+new_id+'>')
+
+    def get_gps_data(self, identity):
+        self.send_command(identity, 'REQUEST_GPS')
+        time_start = time.time()
+        incoming_byte = ''
+        prelimitor_received = False
+        postlmitor_received = False
+        while True:
+            if (self.xbee_port.in_waiting > 0):
+                if(self.xbee_port.read() == '<'):
+                    break
+            if ((time.time() - time_start) > self.timeout):
+                return '-1'
+            time.sleep(0.1)
+
+        gps_coordinates = ''
+        while True:
+            if (self.xbee_port.in_waiting > 0):
+                incoming_byte = self.xbee_port.read()
+
+            if (incoming_byte == '>'):
+                return gps_coordinates
+            else:
+                gps_coordinates += incoming_byte
+
+            if ((time.time() - time_start) > self.timeout):
+                return '-1'
+            time.sleep(0.1)
 
     def acknowledge(self, identity, command):
         """
@@ -108,3 +145,22 @@ class XBee(object):
                 identity_index = 0
 
         return False # Unsuccessful ACK
+
+if __name__ == "__main__":
+    serial_port = raw_input("Enter serial port: ")
+    xbee = XBee(serial_port)
+    while True:
+        try:
+            command = raw_input("Enter Command \nPOWER_ON: 1\nPOWER_OFF: 2\nEXTEND_TIME: 3\nRESET_ID: 4\nREQUEST_GPS: 5\nCommand: ")
+            try:
+                if (command == '4'):
+                    new_id = raw_input("New ID: ")
+                    xbee.change_id('street_cat', new_id)
+                elif (command == '5'):
+                    print xbee.get_gps_data('street_cat')
+                else:
+                    xbee.send_command('street_cat', xbee.decode[command])
+            except KeyError:
+                pass
+        except KeyboardInterrupt:
+            xbee.xbee_port.close()
