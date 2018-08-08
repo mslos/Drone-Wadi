@@ -12,7 +12,7 @@ import os
 class SFTPClient(object):
 
     REMOTE_ROOT_DATA_DIRECTORY = '/media/usb/DCIM/100EK113/'
-    LOCAL_ROOT_DATA_DIRECTORY = '/Volumes/MissionMule/'
+    LOCAL_ROOT_DATA_DIRECTORY = '/srv/'
 
     REMOTE_FIELD_DATA_SOURCE = REMOTE_ROOT_DATA_DIRECTORY + ''               # Location relative to SFTP root directory where the field data files are located; current SFTP root from pi@cameratrap.local /home/pi/
     LOCAL_FIELD_DATA_DESTINATION = LOCAL_ROOT_DATA_DIRECTORY + 'field/'      # Where downloaded data station field data will be kept
@@ -65,7 +65,7 @@ class SFTPClient(object):
             self.__transport = paramiko.Transport((self.__hostname, self.PORT),
                                                   default_window_size=2147483647) # Speeds up download speed
 
-            # Compress files on data station before sending over Wi-Fi to drone
+            # Compress files on data station before sending over Wi-Fi to drone to reduce airtime
             self.__transport.use_compression()
 
             self.__transport.connect(self.__host_key, self.__username, self.__password,

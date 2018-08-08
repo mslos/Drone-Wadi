@@ -1,4 +1,5 @@
 paramiko
-pymavlink
 pyserial
 dronekit
+future==0.15.2
+pymavlink==2.0.6
