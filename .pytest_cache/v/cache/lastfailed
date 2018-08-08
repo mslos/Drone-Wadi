@@ -1,0 +1,5 @@
+{
+  "avionics/tests/test_data_station_handler.py": true,
+  "avionics/tests/test_heartbeat.py": true,
+  "avionics/tests/test_serial_handler.py": true
+}
