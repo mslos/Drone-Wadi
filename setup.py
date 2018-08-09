@@ -14,6 +14,9 @@ setup(name='firefly-mule',
       python_requires='>=3.6',
       setup_requires=['nose', 'rednose'],
       install_requires=[
+          'dronekit',
+          'geopy'
+          'pymavlink==2.0.6',
           'paramiko',
           'pyserial',
           'pytest-runner'
