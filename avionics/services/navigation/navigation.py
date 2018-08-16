@@ -33,7 +33,7 @@ class Navigation(object):
             # Get distance between current waypoint and data station in meters
             d = distance.distance((cur_lat, cur_lon), (wp_lat, wp_lon)).m
 
-            logging.debug("Distance to data station %s: %s" % (data_station_id, d))
+            logging.debug("Distance to data station %s: %s m" % round(data_station_id, d))
 
             if (d < dist):
                 logging.info("Data station %s less than %s away" % (data_station_id, dist))
@@ -41,7 +41,7 @@ class Navigation(object):
             else:
                 time.sleep(1)
 
-    def run(self, rx_lock, is_downloading):
+    def run(self, wakeup_event, download_event, new_ds, is_downloading):
 
         #######################################################################
         # Connect to autopilot
@@ -69,58 +69,8 @@ class Navigation(object):
             logging.error(e)
             self.stop()
 
-        #######################################################################
-        # Set up killswitch
-        #######################################################################
 
-        # self.__vehicle.add_attribute_listener('mode', self.mode_listener)
-
-        #######################################################################
-        # Clear any existing mission and force mission upload
-        #######################################################################
-
-        # logging.info("Clearing old mission from vehicle")
-        # self.__vehicle.waypoint_clear_all_send()
-        # self.__vehicle.recv_match(type=['MISSION_ACK'], blocking=True)
-        # logging.info("Mission cleared")
-        #
-        # #######################################################################
-        # # Wait for operator to upload mission
-        # #######################################################################
-        #
-        # logging.info("Waiting for mission upload...")
-        #
-        # waypoint_count = 0
-        # while waypoint_count < 1:
-        #     logging.debug("Waiting for mission upload...")
-        #     self.__vehicle.waypoint_request_list_send()
-        #     msg = self.__vehicle.recv_match(type=['MISSION_COUNT'], blocking=False)
-        #     if msg != None:
-        #         waypoint_count = msg.count
-        #     time.sleep(3)
-        #
-        # #######################################################################
-        # # Parsing for data station waypoints
-        # #######################################################################
-        #
-        # logging.info("Parsing data station waypoints...")
-        #
-        # for i in range(waypoint_count):
-        #     self.__vehicle.waypoint_request_send(i)
-        #     msg = self.__vehicle.recv_match(type=['MISSION_ITEM'], blocking=True)
-        #     logging.debug("Receiving waypoint {0}".format(msg.seq))
-        #
-        # #######################################################################
-        # # Wait for operator to manually arm and switch the plane to AUTO
-        # #######################################################################
-        #
-        # logging.info("Waiting for vehicle arming...")
-        # self.__vehicle.motors_armed_wait()
-        # logging.info("Vehicled armed")
-
-        #######################################################################
-        # Parse next data station to engage XBee wakeup while en route
-        #######################################################################
+        # Continously monitor state of autopilot and kick of download when necessary
 
         current_waypoint = 0
         waypoints = []
@@ -141,67 +91,47 @@ class Navigation(object):
             current_waypoint = m.seq
 
             # If we are en route to a data station (marked as LOITER waypoint followed by an ROI)
-            if (waypoints[current_waypoint].command == self.LOITER_WAYPOINT_COMMAND) and (waypoints[current_waypoint+1].command == self.ROI_WAYPOINT_COMMAND):
+            if (waypoints[current_waypoint].command == self.LOITER_WAYPOINT_COMMAND) and \
+                (waypoints[current_waypoint+1].command == self.ROI_WAYPOINT_COMMAND):
                 # By default, PX4 uses floats. We use strings (of rounded integers) for data station IDs
                 data_station_id = str(int(waypoints[current_waypoint+1].param3))
 
                 logging.info("En route to data station: %s", data_station_id)
 
-                self.wait_flight_distance(5000, waypoints[current_waypoint], data_station_id)
-                logging.info("Beginning XBee wakeup from data station %s...", data_station_id)
-
-                
-
-                self.wait_flight_distance(1000, waypoints[current_waypoint], data_station_id)
-                logging.info("Beginning data download from data station %s...", data_station_id)
-
-                # rx_lock.acquire()
-                # self.rx_queue.put(data_station_id)
-                # rx_lock.release()
+                # Pass the data station ID to the data station handler
+                self.rx_queue.put(data_station_id)
+                new_ds.set()
 
                 # Give the DataStationHandler some time to kick off the download
                 time.sleep(5)
 
+                self.wait_flight_distance(5000, waypoints[current_waypoint], data_station_id)
+                logging.info("Beginning XBee wakeup from data station %s...", data_station_id)
+
+                # Tell the data station handler to begin wakeup
+                wakeup_event.set()
+
+                self.wait_flight_distance(1000, waypoints[current_waypoint], data_station_id)
+                logging.info("Beginning data download from data station %s...", data_station_id)
+
+                # Tell the data stataion handler to begin download
+                download_event.set()
+
                 while is_downloading.is_set():
                     logging.debug("Downloading...")
                     time.sleep(3)
-                    break
+
+                wakeup_event.clear()
+                download_event.clear()
 
                 # Skip the ROI point
                 next_waypoint = current_waypoint+2
-                logging.info("Done downloading. Moving on to waypoint %i...", next_waypoint)
+                logging.info("Done downloading. Moving on to waypoint %i...", (next_waypoint+1))
                 self.__vehicle.waypoint_set_current_send(next_waypoint)
 
             else:
                 logging.debug("Not at data station...")
                 time.sleep(3)
-
-
-        #######################################################################
-        # Wait vehicle to enter indefinite loiter around data station to kick
-        # off download if XBee ACK was received en route (signalling a
-        # successful wakeup of the data station)
-        #######################################################################
-
-
-
-        #######################################################################
-        # When download is complete--either due to timeout or successful
-        # download--re-engage AUTO mode to continue the mission.
-        # TODO: Ensure that battery failsafe takes over if battery falls below
-        # failsafe threshold while in indefinite loiter mode.
-        #######################################################################
-
-
-
-        #######################################################################
-        # Wait disarming after landing
-        #######################################################################
-
-        logging.info("Waiting for vehicle disarming...")
-        self.__vehicle.motors_disarmed_wait()
-        logging.info("Vehicle disarmed")
-        logging.info("Mission complete")
 
     def stop(self):
         logging.info("Stoping navigation...")

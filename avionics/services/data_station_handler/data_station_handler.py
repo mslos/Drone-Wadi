@@ -30,7 +30,6 @@ class DataStationHandler(object):
         self.connection_timeout_millis = _connection_timeout_millis
         self.read_write_timeout_millis = _read_write_timeout_millis
         self.overall_timeout_millis = _overall_timeout_millis
-        self.wakeup_successful = False
         self.rx_queue = _rx_queue
         self.xbee = XBee()
         self._alive = True
@@ -38,14 +37,21 @@ class DataStationHandler(object):
     def connect(self):
         self.xbee.connect()
 
-    def run(self, rx_lock, is_downloading):
+    def run(self, wakeup_event, download_event, new_ds, is_downloading):
         """Loop forever and handle downloads as data stations are reached"""
 
         while self._alive:
-            if not self.rx_queue.empty():    # You've got mail!
-                self._download_and_sleep(rx_lock, is_downloading)
-            else:
-                time.sleep(1)   # Check RX queue again in 1 second
+            # Wait until there's something in the download queue
+            logging.debug("Waiting for data station...")
+            new_ds.wait()
+
+            logging.debug("New data station in queue, beginnging wakeup and download...")
+
+            # Do the thing
+            is_downloading.set()
+            self._wake_download_and_sleep(wakeup_event, download_event, is_downloading)
+            new_ds.clear()
+            is_downloading.clear()
 
         logging.error("Data station handler terminated")
 
@@ -53,36 +59,35 @@ class DataStationHandler(object):
         logging.info("Stopping data station handler...")
         self._alive = False
 
-    def wake(self):
+    def _wake_download_and_sleep(self, wakeup_event, download_event, is_downloading):
+
+        # Get data station ID as message from rx_queue
+        data_station_id = self.rx_queue.get().strip() # Removes invisible characters
+
+        logging.info('Data station arrival: %s', data_station_id)
+
+        # Wait for navigation to give the wakeup goahead
+        wakeup_event.wait()
+
         # Wake up data station
         logging.info('Waking up over XBee...')
         self.xbee.send_command(data_station_id, 'POWER_ON')
 
         xbee_wake_command_timer = Timer()
-        self.wakeup_successful = True
+        wakeup_successful = True
         if not (os.getenv('TESTING') == 'True'):
             while not self.xbee.acknowledge(data_station_id, 'POWER_ON'):
                 logging.debug("POWER_ON data station %s", data_station_id)
                 self.xbee.send_command(data_station_id, 'POWER_ON')
                 time.sleep(0.5) # Try again in 0.5s
 
-                # Will try shutting down data station over XBee for 5 min before moving on
-                if xbee_wake_command_timer.time_elapsed() > 600:
+                # Will try waking up data station over XBee for minimum 2 min before moving on
+                if download_event.is_set() and xbee_wake_command_timer.time_elapsed() > 120:
+                    wakeup_successful = False
                     logging.error("POWER_ON command ACK failure. Moving on...")
-                    return
+                    break
 
-        self.wakeup_successful = True
-
-    def _download_and_sleep(self, rx_lock, is_downloading):
-        # Update system status (used by heartbeat)
-        is_downloading.set()
-
-        # Get data station ID as message from rx_queue
-        rx_lock.acquire()
-        data_station_id = self.rx_queue.get().strip() # Removes invisible characters
-        rx_lock.release()
-
-        logging.info('Data station arrival: %s', data_station_id)
+        download_event.wait()
 
         # Don't actually download
         if (os.getenv('TESTING') == 'True'):
@@ -92,7 +97,8 @@ class DataStationHandler(object):
             time.sleep(r) # "Download" for random time between 10 and 100 seconds
 
         # Only try download if wakeup was successful
-        elif (self.wakeup_successful): # This is the real world (ahhh!)
+        elif (wakeup_successful): # This is the real world (ahhh!)
+
             logging.info('XBee ACK received, beginning download...')
 
             # '.local' ensures visibility on the network
@@ -134,8 +140,3 @@ class DataStationHandler(object):
 
         # Mark task as complete, even if it fails
         self.rx_queue.task_done()
-
-        self.wakeup_successful = False
-
-        # Update system status
-        is_downloading.clear() # Analagous to is_downloading = False

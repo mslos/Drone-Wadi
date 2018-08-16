@@ -83,6 +83,11 @@ class XBee(object):
         Called after command is sent
         """
 
+        # Mimic successful ACK
+        if (os.getenv('DEVELOPMENT') == 'True'):
+            time.sleep(5)
+            return True
+
         iden_match = False
         identity_index = 0
 
