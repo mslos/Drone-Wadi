@@ -49,7 +49,7 @@ def signal_handler(services, signum, frame):
 
     logging.info("Bye.")
 
-    exit()
+    sys.exit(0)
 
 def main():
     logging.info('\n\n--- mission start ---')
@@ -83,7 +83,7 @@ def main():
     thread_data_station_handler.name = 'Data Station Communication Handler'
     thread_data_station_handler.start()
 
-    thread_navigation = threading.Thread(target=nav.run, args=(is_downloading,))
+    thread_navigation = threading.Thread(target=nav.run, args=(rx_lock, is_downloading,))
     thread_navigation.daemon = True
     thread_navigation.name = 'Navigation'
     thread_navigation.start()
