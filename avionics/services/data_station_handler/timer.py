@@ -4,7 +4,6 @@ General utilities (functions and objects) used for data mule mission code.
 
 import time
 
-## TIMER OBJECT
 class Timer(object):
     """
     Timer function that monitors time elapsed when started.
@@ -26,4 +25,3 @@ class Timer(object):
         mins, secs = divmod(seconds, 60)
         hours, mins = divmod(mins, 60)
         return "%d:%02d:%02d: " % (hours, mins, secs)
-
