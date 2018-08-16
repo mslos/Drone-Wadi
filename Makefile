@@ -11,4 +11,4 @@ run-prod:
 	export DEVELOPMENT=False && export TESTING=False && python3 avionics
 
 clean:
-	kill $(lsof -t -i :14540) && kill $(lsof -t -i :14550) && kill $(lsof -t -i :14560)	
+	kill $(lsof -t -i :14540) && kill $(lsof -t -i :14550) && kill $(lsof -t -i :14560)
