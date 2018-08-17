@@ -36,9 +36,9 @@ class StatusHandler(object):
                 GPIO.output(5, GPIO.LOW) # Turn off green
                 # Flash red LED on and off
                 GPIO.output(7, GPIO.HIGH) # Turn on
-                sleep(1) # Sleep for 1 second
+                time.sleep(1) # Sleep for 1 second
                 GPIO.output(7, GPIO.LOW) # Turn off
-                sleep(1) # Sleep for 1 second
+                time.sleep(1) # Sleep for 1 second
             elif self.status == "FAILURE":
                 GPIO.output(5, GPIO.LOW) # Turn off green
                 # Turn red LED on permanently
