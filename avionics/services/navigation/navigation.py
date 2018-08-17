@@ -41,7 +41,7 @@ class Navigation(object):
             else:
                 time.sleep(1)
 
-    def run(self, wakeup_event, download_event, new_ds, is_downloading):
+    def run(self, wakeup_event, download_event, new_ds, is_downloading, led_status):
 
         #######################################################################
         # Connect to autopilot
@@ -51,30 +51,26 @@ class Navigation(object):
             # PX4 SITL requires UDP port 14540
             connection_string = "udp:127.0.0.1:14540"
         else:
-            connection_string = "/dev/ttyS0"
+            connection_string = "/dev/ttyACM0"
 
         logging.info("Connecting to vehicle on %s", connection_string)
+        led_status.put("PENDING")
 
-        try:
-            while self.__alive and self.__vehicle == None:
-                try:
-                    self.__vehicle = mavutil.mavlink_connection(connection_string, autoreconnect=True)
-                    self.__vehicle.wait_heartbeat()
-                    logging.info("Connection to vehicle successful")
-                except:
-                    logging.error("Failed to connect to vehicle. Retrying...")
-                    time.sleep(3)
-        except Exception as e:
-            logging.error("Connection to autopilot failed")
-            logging.error(e)
-            self.stop()
+        while self.__alive == True and self.__vehicle == None:
+            try:
+                self.__vehicle = mavutil.mavlink_connection(connection_string, autoreconnect=True)
+                self.__vehicle.wait_heartbeat()
+                logging.info("Connection to vehicle successful")
+            except:
+                logging.error("Failed to connect to vehicle. Retrying...")
+                time.sleep(3)
 
-
+        led_status.put("READY")
         # Continously monitor state of autopilot and kick of download when necessary
 
         current_waypoint = 0
         waypoints = []
-        while True:
+        while self.__alive:
             # Get most up-to-date mission
             self.__vehicle.waypoint_request_list_send()
             waypoint_count = self.__vehicle.recv_match(type=['MISSION_COUNT'], blocking=True).count
@@ -135,6 +131,6 @@ class Navigation(object):
 
     def stop(self):
         logging.info("Stoping navigation...")
+        self.__alive = False
         if self.__vehicle != None:
             self.__vehicle.close()
-        self._alive = False
