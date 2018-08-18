@@ -5,6 +5,7 @@ import threading
 
 from geopy import distance
 from pymavlink import mavutil, mavwp
+from dronekit import connect
 
 class Navigation(object):
 
@@ -24,8 +25,11 @@ class Navigation(object):
             self.__vehicle.wait_gps_fix()
             self.__vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
 
-            cur_lat = self.__vehicle.messages['GPS_RAW_INT'].lat*1.0e-7
-            cur_lon = self.__vehicle.messages['GPS_RAW_INT'].lon*1.0e-7
+            # cur_lat = self.__vehicle.messages['GPS_RAW_INT'].lat*1.0e-7
+            # cur_lon = self.__vehicle.messages['GPS_RAW_INT'].lon*1.0e-7
+
+            cur_lat = self.__vehicle.location.global_relative_frame.lat*1.0e-7
+            cur_lon = self.__vehicle.location.global_relative_frame.lon*1.0e-7
 
             wp_lat = waypoint.x
             wp_lon = waypoint.y
@@ -58,8 +62,9 @@ class Navigation(object):
 
         while self.__alive == True and self.__vehicle == None:
             try:
-                self.__vehicle = mavutil.mavlink_connection(connection_string, autoreconnect=True)
-                self.__vehicle.wait_heartbeat()
+                # self.__vehicle = mavutil.mavlink_connection(connection_string, autoreconnect=True)
+                # self.__vehicle.wait_heartbeat()
+                self.__vehicle = connect(connection_string, wait_ready=True)
                 logging.info("Connection to vehicle successful")
             except:
                 logging.error("Failed to connect to vehicle. Retrying...")
@@ -74,22 +79,31 @@ class Navigation(object):
         waypoints = []
         while self.__alive:
             # Get most up-to-date mission
-            self.__vehicle.waypoint_request_list_send()
-            waypoint_count = self.__vehicle.recv_match(type=['MISSION_COUNT'], blocking=True).count
+            waypoints = self.__vehicle.commands
+            waypoints.download()
+            waypoints.wait_ready()
 
-            waypoints = []
-            for i in range(waypoint_count):
-                self.__vehicle.waypoint_request_send(i)
-                wp = self.__vehicle.recv_match(type=['MISSION_ITEM'], blocking=True)
-                waypoints.append(wp)
-                # logging.debug(wp)
+            waypoint_count = len(waypoints)
 
-            # Update current_waypoint
-            m = self.__vehicle.recv_match(type='MISSION_CURRENT', blocking=True)
-            current_waypoint = m.seq
+            current_waypoint = self.__vehicle.commands.next
+
+            # self.__vehicle.waypoint_request_list_send()
+            # waypoint_count = self.__vehicle.recv_match(type=['MISSION_COUNT'], blocking=True).count
+            #
+            # waypoints = []
+            # for i in range(waypoint_count):
+            #     self.__vehicle.waypoint_request_send(i)
+            #     wp = self.__vehicle.recv_match(type=['MISSION_ITEM'], blocking=True)
+            #     waypoints.append(wp)
+            #     # logging.debug(wp)
+            #
+            # # Update current_waypoint
+            # m = self.__vehicle.recv_match(type='MISSION_CURRENT', blocking=True)
+            # current_waypoint = m.seq
 
             # If we are en route to a data station (marked as LOITER waypoint followed by an ROI)
-            if (waypoints[current_waypoint].command == self.LOITER_WAYPOINT_COMMAND) and \
+            if (waypoint_count-current_waypoint > 1) and \
+                (waypoints[current_waypoint].command == self.LOITER_WAYPOINT_COMMAND) and \
                 (waypoints[current_waypoint+1].command == self.ROI_WAYPOINT_COMMAND):
                 # By default, PX4 uses floats. We use strings (of rounded integers) for data station IDs
                 data_station_id = str(int(waypoints[current_waypoint+1].param3))
@@ -125,7 +139,8 @@ class Navigation(object):
                 # Skip the ROI point
                 next_waypoint = current_waypoint+2
                 logging.info("Done downloading. Moving on to waypoint %i...", (next_waypoint+1))
-                self.__vehicle.waypoint_set_current_send(next_waypoint)
+                # self.__vehicle.waypoint_set_current_send(next_waypoint)
+                self.__vehicle.commands.next = next_waypoint
 
             else:
                 logging.debug("Not at data station...")
