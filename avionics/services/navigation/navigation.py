@@ -57,7 +57,7 @@ class Navigation(object):
         else:
             connection_string = "/dev/ttyACM0"
 
-        logging.info("Connecting to vehicle on %s", connection_string)
+        logging.info("Connecting to vehicle on %s", "/dev/ttyACM0")
         led_status.put("PENDING")
 
         while self.__alive == True and self.__vehicle == None:
