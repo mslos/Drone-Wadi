@@ -51,13 +51,15 @@ class Navigation(object):
         # Connect to autopilot
         #######################################################################
 
-        if (os.getenv('DEVELOPMENT') == 'True'):
-            # PX4 SITL requires UDP port 14540
-            connection_string = "udp:127.0.0.1:14540"
-        else:
-            connection_string = "/dev/ttyACM0"
+        # if (os.getenv('DEVELOPMENT') == 'True'):
+        #     # PX4 SITL requires UDP port 14540
+        #     connection_string = "udp:127.0.0.1:14540"
+        # else:
+        #     connection_string = "/dev/ttyACM0"
 
-        logging.info("Connecting to vehicle on %s", "/dev/ttyACM0")
+        connection_string = "/dev/ttyACM0"
+
+        logging.info("Connecting to vehicle on %s", connection_string)
         led_status.put("PENDING")
 
         while self.__alive == True and self.__vehicle == None:
