@@ -65,6 +65,8 @@ class Navigation(object):
                 logging.error("Failed to connect to vehicle. Retrying...")
                 time.sleep(3)
 
+        logging.info("Here")
+
         led_status.put("READY")
         # Continously monitor state of autopilot and kick of download when necessary
 
