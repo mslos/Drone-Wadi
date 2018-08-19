@@ -69,10 +69,6 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
-        # while not self.__vehicle._home_location:
-        #     print "Waiting for home position..."
-        #     time.sleep(1)
-
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
@@ -83,8 +79,9 @@ class Navigation(object):
                 waypoints = self.__vehicle.commands
                 waypoints.clear()
                 waypoints.download()
-                logging.error("Waiting for download")
+                logging.debug("Waiting for download")
                 waypoints.wait_ready()
+                logging.debug("Download complete")
                 led_status.put("READY") # Not truly ready until waypoint download works
             except:
                 logging.error("Waypoint download failure")
