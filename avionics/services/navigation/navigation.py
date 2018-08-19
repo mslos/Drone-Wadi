@@ -59,10 +59,6 @@ class Navigation(object):
         logging.info("Connecting to vehicle on %s", connection_string)
         led_status.put("PENDING")
 
-        while not self.__vehicle.is_armable:
-            logging.debug("Waiting for vehicle to initialise...")
-            time.sleep(1)
-
         while self.__alive == True and self.__vehicle == None:
             try:
                 self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
@@ -72,6 +68,10 @@ class Navigation(object):
                 logging.error("Failed to connect to vehicle. Retrying...")
                 led_status.put("FAILURE")
                 time.sleep(3)
+
+        while not self.__vehicle.is_armable:
+            logging.debug("Waiting for vehicle to initialise...")
+            time.sleep(1)
 
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
