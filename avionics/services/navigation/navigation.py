@@ -62,7 +62,6 @@ class Navigation(object):
         try:
             self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
             logging.info("Connection to vehicle successful")
-            break
         except:
             logging.error("Failed to connect to vehicle. Retrying...")
             time.sleep(3)
