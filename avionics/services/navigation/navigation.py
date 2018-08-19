@@ -60,7 +60,8 @@ class Navigation(object):
         # led_status.put("PENDING")
 
         try:
-            self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
+            self.__vehicle = "somethng"
+            # self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
             logging.info("Connection to vehicle successful")
         except:
             logging.error("Failed to connect to vehicle. Retrying...")
