@@ -69,10 +69,12 @@ class XBee(object):
         # # Get MD5 hash to 3 hex characters
         # identity_code = hash.hexdigest()[0:3]
 
+        identity_code = data_station_id
+
         logging.debug("XBee TX: %s" % self.preamble_out)
         self.xbee_port.write(self.preamble_out.encode('utf-8'))
 
-        logging.debug("XBee TX: %s" % data_station_id)
+        logging.debug("XBee TX: %s" % identity_code)
         self.xbee_port.write(identity_code.encode('utf-8'))
 
         logging.debug("XBee TX: %s" % self.encode[command])
