@@ -57,4 +57,8 @@ class StatusHandler(object):
 
     def stop(self):
         logging.info("Stoping status handler...")
+        # Turn off the LEDs
+        GPIO.output(self.RED_PIN, GPIO.LOW)
+        GPIO.output(self.GREEN_PIN, GPIO.LOW)
+        
         self.__alive = False
