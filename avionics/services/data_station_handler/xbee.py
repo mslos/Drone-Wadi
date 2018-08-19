@@ -94,12 +94,14 @@ class XBee(object):
         preamble_success = False
         preamble_index = 0
 
-        # Update hash with new data_station_id
-        hash = hashlib.md5()
-        hash.update(data_station_id.encode('utf-8'))
+        # # Update hash with new data_station_id
+        # hash = hashlib.md5()
+        # hash.update(data_station_id.encode('utf-8'))
+        #
+        # # Get MD5 hash to 3 hex characters
+        # identity_code = hash.hexdigest()[0:3]
 
-        # Get MD5 hash to 3 hex characters
-        identity_code = hash.hexdigest()[0:3]
+        identity_code = data_station_id
 
         command_code = self.encode[command]
 
