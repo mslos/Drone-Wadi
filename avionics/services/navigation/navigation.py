@@ -80,12 +80,10 @@ class Navigation(object):
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
-        logging.debug("Before while %s", self.__alive)
         while self.__alive:
             # Get most up-to-date mission
             waypoints = self.__vehicle.commands
             waypoints.download()
-            logging.debug("Before wait")
             waypoints.wait_ready()
 
             waypoint_count = len(waypoints)

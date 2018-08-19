@@ -98,7 +98,7 @@ def main():
 
     thread_data_station_handler = threading.Thread(target=dl.run, args=(wakeup_event, download_event, new_ds, is_downloading,))
     thread_data_station_handler.daemon = True
-    thread_data_station_handler.name = 'Data Station Communication Handler'
+    thread_data_station_handler.name = 'DS Handler'
     thread_data_station_handler.start()
     threads.append(thread_data_station_handler)
 
@@ -108,11 +108,11 @@ def main():
     thread_navigation.start()
     threads.append(thread_navigation)
 
-    # thread_system_status = threading.Thread(target=stat.run, args=(led_status,))
-    # thread_system_status.daemon = True
-    # thread_system_status.name = 'LED Status Handler'
-    # thread_system_status.start()
-    # threads.append(thread_system_status)
+    thread_system_status = threading.Thread(target=stat.run, args=(led_status,))
+    thread_system_status.daemon = True
+    thread_system_status.name = 'LED Handler'
+    thread_system_status.start()
+    threads.append(thread_system_status)
 
     # Ugly, I know. Python2.7 doesn't play nice with elegant SIGINT handling
     # if a call to the thread's join method has already been made so we have
