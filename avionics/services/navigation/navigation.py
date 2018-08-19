@@ -74,6 +74,7 @@ class Navigation(object):
         waypoints = []
         while self.__alive:
             # Get most up-to-date mission
+            logging.debug("In while")
             waypoints = self.__vehicle.commands
             waypoints.download()
             logging.debug("Before wait")
