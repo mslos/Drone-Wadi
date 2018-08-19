@@ -27,14 +27,14 @@ def setup_logging():
 
     logging.basicConfig(filename='flight.log',
                         level=logging_level,
-                        format='%(asctime)s.%(msecs)03d %(levelname)s \t%(message)s',
+                        format='%(asctime)s.%(msecs)03d %(threadName)s %(levelname)s \t%(message)s',
                         datefmt="%d %b %Y %H:%M:%S")
 
     # Log to STDOUT
     # TODO: only log to stdout in debug mode to speed things up
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging_level)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s \t%(message)s')
+    formatter = logging.Formatter('%(asctime)s %(threadName)s %(levelname)s \t%(message)s')
     ch.setFormatter(formatter)
     logging.getLogger().addHandler(ch)
 
