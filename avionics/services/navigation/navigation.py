@@ -69,13 +69,8 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
-        while not self.__vehicle.is_armable and self.__alive:
-            logging.debug(self.__vehicle.gps_0.fix_type)
-            logging.debug(self.__vehicle._ekf_predposhorizabs)
-            logging.debug(self.__vehicle._ekf_poshorizabs)
-            logging.debug(self.__vehicle._ekf_constposmode)
-            logging.debug(self.__vehicle.mode.name)
-            logging.debug("Waiting for vehicle to initialise...")
+        while not self.__vehicle.home_position:
+            print "Waiting for home position..."
             time.sleep(1)
 
         # Continously monitor state of autopilot and kick of download when necessary

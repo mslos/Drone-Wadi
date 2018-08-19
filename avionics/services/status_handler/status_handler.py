@@ -36,7 +36,7 @@ class StatusHandler(object):
                 # Turn both LEDs on to verify that they are both working
                 GPIO.output(self.RED_PIN, GPIO.HIGH)
                 GPIO.output(self.GREEN_PIN, GPIO.HIGH)
-                time.sleep(3)
+                time.sleep(3) # Block to give the operator enough time to verify
             elif self.status == "READY":
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
                 # Turn green LED on permanently
@@ -45,9 +45,9 @@ class StatusHandler(object):
                 GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Flash red LED on and off
                 GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
-                time.sleep(0.5) # Sleep for 1 second
+                time.sleep(0.5) # Sleep for 0.5 second
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
-                time.sleep(0.5) # Sleep for 1 second
+                time.sleep(0.5) # Sleep for 0.5 second
             elif self.status == "FAILURE":
                 GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Turn red LED on permanently
