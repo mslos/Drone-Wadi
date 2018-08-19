@@ -69,9 +69,9 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
-        while not self.__vehicle._home_location:
-            print "Waiting for home position..."
-            time.sleep(1)
+        # while not self.__vehicle._home_location:
+        #     print "Waiting for home position..."
+        #     time.sleep(1)
 
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
