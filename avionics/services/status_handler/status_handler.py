@@ -54,11 +54,15 @@ class StatusHandler(object):
                 GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
             else:
                 logging.error("Undefined state, no LED action")
+                # Turn off both LEDs
+                GPIO.output(self.RED_PIN, GPIO.LOW)
+                GPIO.output(self.GREEN_PIN, GPIO.LOW)
 
     def stop(self):
         logging.info("Stoping status handler...")
         # Turn off the LEDs
         GPIO.output(self.RED_PIN, GPIO.LOW)
         GPIO.output(self.GREEN_PIN, GPIO.LOW)
-        
+
+        # Kill the run method
         self.__alive = False

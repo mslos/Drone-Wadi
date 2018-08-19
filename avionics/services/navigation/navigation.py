@@ -76,7 +76,6 @@ class Navigation(object):
         waypoints = []
         while self.__alive:
             # Get most up-to-date mission
-            logging.debug("Downloading waypoints...")
             try:
                 waypoints = self.__vehicle.commands
 
@@ -85,10 +84,9 @@ class Navigation(object):
                 waypoints.clear()
 
                 waypoints.download()
-                logging.debug("Waiting for download")
                 waypoints.wait_ready()
-                logging.debug("Download complete")
                 led_status.put("READY") # Not truly ready until waypoint download works
+
             except:
                 logging.error("Waypoint download failure")
                 led_status.put("FAILURE")
