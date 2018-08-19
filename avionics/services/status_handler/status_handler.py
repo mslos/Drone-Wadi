@@ -25,35 +25,35 @@ class StatusHandler(object):
     def run(self, led_status):
 
         while self.__alive and not (os.getenv('DEVELOPMENT') == 'True'):
-
-            # Update status if needed
-            if not led_status.empty():
-                logging.debug("here")
-                self.status = led_status.get()
-                led_status.task_done()
-                logging.info("LED Status: %s", self.status)
-
-            # Display status via LED UI
-            if self.status == "READY":
-                pass
-                # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
-                # # Turn green LED on permanently
-                # GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
-            elif self.status == "PENDING":
-                pass
-                # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
-                # # Flash red LED on and off
-                # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
-                # time.sleep(0.5) # Sleep for 1 second
-                # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
-                # time.sleep(0.5) # Sleep for 1 second
-            elif self.status == "FAILURE":
-                pass
-                # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
-                # # Turn red LED on permanently
-                # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
-            else:
-                logging.error("Undefined state, no LED action")
+            pass
+            # # Update status if needed
+            # if not led_status.empty():
+            #     logging.debug("here")
+            #     self.status = led_status.get()
+            #     led_status.task_done()
+            #     logging.info("LED Status: %s", self.status)
+            #
+            # # Display status via LED UI
+            # if self.status == "READY":
+            #     pass
+            #     # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
+            #     # # Turn green LED on permanently
+            #     # GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
+            # elif self.status == "PENDING":
+            #     pass
+            #     # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
+            #     # # Flash red LED on and off
+            #     # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+            #     # time.sleep(0.5) # Sleep for 1 second
+            #     # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
+            #     # time.sleep(0.5) # Sleep for 1 second
+            # elif self.status == "FAILURE":
+            #     pass
+            #     # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
+            #     # # Turn red LED on permanently
+            #     # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+            # else:
+            #     logging.error("Undefined state, no LED action")
 
     def stop(self):
         logging.info("Stoping status handler...")
