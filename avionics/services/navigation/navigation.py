@@ -113,9 +113,9 @@ class Navigation(object):
             time.sleep(20)
             download_event.set()
 
-             while is_downloading.is_set():
-                    logging.debug("Downloading...")
-                    time.sleep(3)
+            while is_downloading.is_set():
+                logging.debug("Downloading...")
+                time.sleep(3)
 
             wakeup_event.clear()
             download_event.clear()
