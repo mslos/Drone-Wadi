@@ -18,18 +18,23 @@ class Navigation(object):
 
         self.__vehicle = None
         self.__alive = True
+        self.__current_location = None
+
+    def location_callback(self, vehicle, name, location):
+        if location.global_relative_frame.alt is not None:
+            self.current_location = location.global_relative_frame
 
 
     def wait_flight_distance(self, dist, waypoint, data_station_id):
         while True:
-            self.__vehicle.wait_gps_fix()
-            self.__vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
 
-            # cur_lat = self.__vehicle.messages['GPS_RAW_INT'].lat*1.0e-7
-            # cur_lon = self.__vehicle.messages['GPS_RAW_INT'].lon*1.0e-7
+            # Avoid calculations on "None"
+            if (self.__vehicle.location.global_relative_frame.lat == None):
+                logging.debug("No GPS data, moving ahead with download sequence...")
+                return
 
-            cur_lat = self.__vehicle.location.global_relative_frame.lat*1.0e-7
-            cur_lon = self.__vehicle.location.global_relative_frame.lon*1.0e-7
+            cur_lat = self.__vehicle.location.global_relative_frame.lat
+            cur_lon = self.__vehicle.location.global_relative_frame.lon
 
             wp_lat = waypoint.x
             wp_lon = waypoint.y
@@ -37,7 +42,7 @@ class Navigation(object):
             # Get distance between current waypoint and data station in meters
             d = distance.distance((cur_lat, cur_lon), (wp_lat, wp_lon)).m
 
-            logging.debug("Distance to data station %s: %s m" % round(data_station_id, d))
+            logging.debug("Distance to data station %s: %s m" % (data_station_id, round(d)))
 
             if (d < dist):
                 logging.info("Data station %s less than %s away" % (data_station_id, dist))
@@ -51,32 +56,28 @@ class Navigation(object):
         # Connect to autopilot
         #######################################################################
 
-        # if (os.getenv('DEVELOPMENT') == 'True'):
-        #     # PX4 SITL requires UDP port 14540
-        #     connection_string = "udp:127.0.0.1:14540"
-        # else:
-        #     connection_string = "/dev/ttyACM0"
-
-        connection_string = "/dev/ttyACM0"
+        if (os.getenv('DEVELOPMENT') == 'True'):
+            # PX4 SITL requires UDP port 14540
+            connection_string = "udp:127.0.0.1:14540"
+        else:
+            connection_string = "/dev/ttyACM0"
 
         logging.info("Connecting to vehicle on %s", connection_string)
         led_status.put("PENDING")
 
         while self.__alive == True and self.__vehicle == None:
             try:
-                # self.__vehicle = mavutil.mavlink_connection(connection_string, autoreconnect=True)
-                # self.__vehicle.wait_heartbeat()
                 self.__vehicle = connect(connection_string, wait_ready=True)
                 logging.info("Connection to vehicle successful")
             except:
                 logging.error("Failed to connect to vehicle. Retrying...")
                 time.sleep(3)
 
-        logging.info("Here")
-
         led_status.put("READY")
-        # Continously monitor state of autopilot and kick of download when necessary
 
+        # self.__vehicle.add_attribute_listener('location', self.location_callback)
+
+        # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
         while self.__alive:
@@ -87,21 +88,9 @@ class Navigation(object):
 
             waypoint_count = len(waypoints)
 
-            current_waypoint = self.__vehicle.commands.next
-
-            # self.__vehicle.waypoint_request_list_send()
-            # waypoint_count = self.__vehicle.recv_match(type=['MISSION_COUNT'], blocking=True).count
-            #
-            # waypoints = []
-            # for i in range(waypoint_count):
-            #     self.__vehicle.waypoint_request_send(i)
-            #     wp = self.__vehicle.recv_match(type=['MISSION_ITEM'], blocking=True)
-            #     waypoints.append(wp)
-            #     # logging.debug(wp)
-            #
-            # # Update current_waypoint
-            # m = self.__vehicle.recv_match(type='MISSION_CURRENT', blocking=True)
-            # current_waypoint = m.seq
+            # Zero base index into waypoints list
+            current_waypoint = self.__vehicle.commands.next-1
+            logging.debug("Current waypoint: %s", current_waypoint)
 
             # If we are en route to a data station (marked as LOITER waypoint followed by an ROI)
             if (waypoint_count-current_waypoint > 1) and \
@@ -141,7 +130,6 @@ class Navigation(object):
                 # Skip the ROI point
                 next_waypoint = current_waypoint+2
                 logging.info("Done downloading. Moving on to waypoint %i...", (next_waypoint+1))
-                # self.__vehicle.waypoint_set_current_send(next_waypoint)
                 self.__vehicle.commands.next = next_waypoint
 
             else:

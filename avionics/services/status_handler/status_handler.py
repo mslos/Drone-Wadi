@@ -27,7 +27,9 @@ class StatusHandler(object):
             # Update status if needed
             if not led_status.empty():
                 self.status = led_status.get()
+                logging.info("LED Status: %s", self.status)
 
+            # Display status via LED UI
             if self.status == "READY":
                 GPIO.output(5, GPIO.HIGH) # Turn off green
                 # Turn green LED on permanently

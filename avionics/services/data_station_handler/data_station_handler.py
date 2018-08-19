@@ -45,7 +45,7 @@ class DataStationHandler(object):
             logging.debug("Waiting for data station...")
             new_ds.wait()
 
-            logging.debug("New data station in queue, beginnging wakeup and download...")
+            logging.debug("New data station in queue, beginning wakeup and download...")
 
             # Do the thing
             is_downloading.set()
