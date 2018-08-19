@@ -28,11 +28,9 @@ class StatusHandler(object):
 
             # Update status if needed
             if not led_status.empty():
-                try:
-                    self.status = led_status.get_nowait()
-                    logging.info("LED Status: %s", self.status)
-                except:
-                    logging.debug("Nothing get in led_status")
+                self.status = led_status.get()
+                led_status.task_done()
+                logging.info("LED Status: %s", self.status)
 
             # Display status via LED UI
             if self.status == "READY":
