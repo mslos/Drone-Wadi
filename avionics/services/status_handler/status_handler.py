@@ -20,7 +20,7 @@ class StatusHandler(object):
             GPIO.setup(5, GPIO.OUT, initial=GPIO.LOW) # Set pin 8 to be an output pin and set initial value to low (off)
             GPIO.setup(7, GPIO.OUT, initial=GPIO.LOW) # Set pin 8 to be an output pin and set initial value to low (off)
 
-        self.status = "PENDING"
+        self.status = "INITIALIZING"
 
     def run(self, led_status):
 
@@ -32,7 +32,11 @@ class StatusHandler(object):
                 logging.info("LED Status: %s", self.status)
 
             # Display status via LED UI
-            if self.status == "READY":
+            if self.status == "INITIALIZING":
+                # Turn both LEDs on to verify that they are both working
+                GPIO.output(self.RED_PIN, GPIO.HIGH)
+                GPIO.output(self.GREEN_PIN, GPIO.HIGH)
+            elif self.status == "READY":
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
                 # Turn green LED on permanently
                 GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on

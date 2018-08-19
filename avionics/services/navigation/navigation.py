@@ -72,6 +72,8 @@ class Navigation(object):
         while not self.__vehicle.is_armable and self.__alive:
             logging.debug(self.__vehicle.gps_0.fix_type)
             logging.debug(self.__vehicle._ekf_predposhorizabs)
+            logging.debug(self.__vehicle._ekf_poshorizabs)
+            logging.debug(self.__vehicle._ekf_constposmode)
             logging.debug(self.__vehicle.mode.name)
             logging.debug("Waiting for vehicle to initialise...")
             time.sleep(1)
