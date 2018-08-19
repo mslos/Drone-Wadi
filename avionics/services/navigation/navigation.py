@@ -76,6 +76,7 @@ class Navigation(object):
             # Get most up-to-date mission
             waypoints = self.__vehicle.commands
             waypoints.download()
+            logging.debug("Before wait")
             waypoints.wait_ready()
 
             waypoint_count = len(waypoints)
