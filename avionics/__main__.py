@@ -102,7 +102,7 @@ def main():
     # thread_data_station_handler.start()
     # threads.append(thread_data_station_handler)
 
-    thread_navigation = threading.Thread(target=nav.run, args=(wakeup_event, download_event, new_ds, is_downloading, led_status))
+    thread_navigation = threading.Thread(target=nav.run, args=(wakeup_event, download_event, new_ds, is_downloading, led_status,))
     thread_navigation.daemon = True
     thread_navigation.name = 'Navigation'
     thread_navigation.start()
