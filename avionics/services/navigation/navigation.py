@@ -65,6 +65,7 @@ class Navigation(object):
                 # Verify that the serial port is cleared
                 s = serial.Serial("/dev/ttyACM0", baudrate=115200)
                 s.close()
+                time.sleep(3) # CLOSE PLS
                 logging.info("Cleared serial port")
 
                 self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
@@ -172,3 +173,4 @@ class Navigation(object):
         self.__alive = False
         if self.__vehicle != None:
             self.__vehicle.close()
+            time.sleep(3) # CLOSE PLS
