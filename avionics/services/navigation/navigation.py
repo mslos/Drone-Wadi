@@ -1,5 +1,6 @@
 import logging
 import os
+import serial
 import time
 import threading
 
@@ -61,6 +62,10 @@ class Navigation(object):
 
         while self.__alive == True and self.__vehicle == None:
             try:
+                s = serial.Serial("/dev/ttyACM0", baudrate=115200)
+                s.close()
+                logging.info("Cleared serial port")
+                
                 self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
                 logging.info("Connection to vehicle successful")
                 break
