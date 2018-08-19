@@ -25,7 +25,8 @@ class StatusHandler(object):
     def run(self, led_status):
 
         while self.__alive and not (os.getenv('DEVELOPMENT') == 'True'):
-            pass
+            time.sleep(5)
+            # pass
             # # Update status if needed
             # if not led_status.empty():
             #     logging.debug("here")
