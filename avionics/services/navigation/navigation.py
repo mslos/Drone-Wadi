@@ -57,7 +57,7 @@ class Navigation(object):
             connection_string = "/dev/ttyACM0"
 
         logging.info("Connecting to vehicle on %s", connection_string)
-        led_status.put("PENDING")
+        # led_status.put("PENDING")
 
         while self.__alive == True and self.__vehicle == None:
             try:
@@ -67,7 +67,7 @@ class Navigation(object):
                 logging.error("Failed to connect to vehicle. Retrying...")
                 time.sleep(3)
 
-        led_status.put("READY")
+        # led_status.put("READY")
 
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
