@@ -45,7 +45,7 @@ class Navigation(object):
             else:
                 time.sleep(1)
 
-    def run(self, wakeup_event, download_event, new_ds, is_downloading, led_status):
+    def run(self, wakeup_event, download_event, new_ds, is_downloading, is_awake, led_status):
 
         #######################################################################
         # Connect to autopilot
@@ -111,7 +111,9 @@ class Navigation(object):
             time.sleep(3)
             wakeup_event.set()
 
-            time.sleep(20)
+            while not is_awake.is_set()
+                time.sleep(1)
+
             download_event.set()
 
             while is_downloading.is_set():

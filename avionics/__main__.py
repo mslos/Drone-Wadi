@@ -64,6 +64,7 @@ def main():
 
     # System status flag set by data station handler
     is_downloading = threading.Event()
+    is_awake = threading.Event()
 
     # System status flag set by navigation, monitored by data station handler
     wakeup_event = threading.Event()
@@ -96,13 +97,13 @@ def main():
     signal.signal(signal.SIGINT, partial(signal_handler, services, threads))
     dl.connect()
 
-    thread_data_station_handler = threading.Thread(target=dl.run, args=(wakeup_event, download_event, new_ds, is_downloading,))
+    thread_data_station_handler = threading.Thread(target=dl.run, args=(wakeup_event, download_event, new_ds, is_downloading, is_awake))
     thread_data_station_handler.daemon = True
     thread_data_station_handler.name = 'DS Handler'
     thread_data_station_handler.start()
     threads.append(thread_data_station_handler)
 
-    thread_navigation = threading.Thread(target=nav.run, args=(wakeup_event, download_event, new_ds, is_downloading, led_status,))
+    thread_navigation = threading.Thread(target=nav.run, args=(wakeup_event, download_event, new_ds, is_downloading, is_awake, led_status,))
     thread_navigation.daemon = True
     thread_navigation.name = 'Navigation'
     thread_navigation.start()

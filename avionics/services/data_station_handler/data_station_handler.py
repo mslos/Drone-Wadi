@@ -37,7 +37,7 @@ class DataStationHandler(object):
     def connect(self):
         self.xbee.connect()
 
-    def run(self, wakeup_event, download_event, new_ds, is_downloading):
+    def run(self, wakeup_event, download_event, new_ds, is_downloading, is_awake):
         """Loop forever and handle downloads as data stations are reached"""
 
         while self._alive:
@@ -59,7 +59,7 @@ class DataStationHandler(object):
         logging.info("Stopping data station handler...")
         self._alive = False
 
-    def _wake_download_and_sleep(self, wakeup_event, download_event, is_downloading):
+    def _wake_download_and_sleep(self, wakeup_event, download_event, is_downloading, is_awake):
 
         # Get data station ID as message from rx_queue
         data_station_id = self.rx_queue.get().strip() # Removes invisible characters
@@ -87,6 +87,7 @@ class DataStationHandler(object):
                     logging.error("POWER_ON command ACK failure. Moving on...")
                     break
 
+        is_awake.set()
         download_event.wait()
 
         # Don't actually download
@@ -137,6 +138,8 @@ class DataStationHandler(object):
                 if xbee_sleep_command_timer.time_elapsed() > 20:
                     logging.error("POWER_OFF command ACK failure. Moving on...")
                     break
+
+        is_awake.clear()
 
         # Mark task as complete, even if it fails
         self.rx_queue.task_done()
