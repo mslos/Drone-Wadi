@@ -69,6 +69,8 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
+        time.sleep(3) # Verify LEDs
+
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
