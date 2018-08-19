@@ -79,7 +79,11 @@ class Navigation(object):
             logging.debug("Downloading waypoints...")
             try:
                 waypoints = self.__vehicle.commands
+
+                # THE MAGIC BULLET! Why does this make it work? Beats me.
+                # Nevertheless, this needs to be called before download.
                 waypoints.clear()
+
                 waypoints.download()
                 logging.debug("Waiting for download")
                 waypoints.wait_ready()
