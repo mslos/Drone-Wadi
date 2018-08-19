@@ -57,15 +57,11 @@ class Navigation(object):
             connection_string = "/dev/ttyACM0"
 
         logging.info("Connecting to vehicle on %s", connection_string)
-        # led_status.put("PENDING")
+        led_status.put("PENDING")
 
-        # try:
-        #     self.__vehicle = "somethng"
-        #     # self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
-        #     logging.info("Connection to vehicle successful")
-        # except:
-        #     logging.error("Failed to connect to vehicle. Retrying...")
-        #     time.sleep(3)
+        while not vehicle.is_armable:
+            logging.debug("Waiting for vehicle to initialise...")
+            time.sleep(1)
 
         while self.__alive == True and self.__vehicle == None:
             try:
