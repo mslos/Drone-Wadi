@@ -49,7 +49,7 @@ class DataStationHandler(object):
 
             # Do the thing
             is_downloading.set()
-            self._wake_download_and_sleep(wakeup_event, download_event, is_downloading)
+            self._wake_download_and_sleep(wakeup_event, download_event, is_downloading, is_awake)
             new_ds.clear()
             is_downloading.clear()
 
