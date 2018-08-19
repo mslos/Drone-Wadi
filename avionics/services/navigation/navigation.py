@@ -69,7 +69,7 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
-        while not self.__vehicle.is_armable:
+        while not self.__vehicle.is_armable and self.__alive:
             logging.debug(self.__vehicle.gps_0.fix_type)
             logging.debug(self.__vehicle._ekf_predposhorizabs)
             logging.debug(self.__vehicle.mode.name)
