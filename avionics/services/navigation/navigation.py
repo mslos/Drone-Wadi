@@ -81,6 +81,7 @@ class Navigation(object):
             logging.debug("Downloading waypoints...")
             try:
                 waypoints = self.__vehicle.commands
+                waypoints.clear()
                 waypoints.download()
                 logging.error("Waiting for download")
                 waypoints.wait_ready()
