@@ -76,11 +76,10 @@ class Navigation(object):
         #         time.sleep(3)
 
         # led_status.put("READY")
-
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
-        logging.debug("Before while")
+        logging.debug("Before while %s", self.__alive)
         while self.__alive:
             # Get most up-to-date mission
             logging.debug("In while")
