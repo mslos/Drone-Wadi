@@ -74,9 +74,9 @@ class Navigation(object):
                 break
             except:
                 logging.error("Failed to connect to vehicle. Retrying...")
+                led_status.put("FAILURE")
                 time.sleep(3)
 
-        # led_status.put("READY")
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
@@ -88,8 +88,10 @@ class Navigation(object):
                 waypoints.download()
                 logging.error("Waiting for download")
                 waypoints.wait_ready()
+                led_status.put("READY") # Not truly ready until waypoint download works
             except:
                 logging.error("Waypoint download failure")
+                led_status.put("FAILURE")
 
             waypoint_count = len(waypoints)
 
