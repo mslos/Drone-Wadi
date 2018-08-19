@@ -61,7 +61,7 @@ class Navigation(object):
 
         while self.__alive == True and self.__vehicle == None:
             try:
-                self.__vehicle = connect(connection_string, wait_ready=True)
+                self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
                 logging.info("Connection to vehicle successful")
                 break
             except:
