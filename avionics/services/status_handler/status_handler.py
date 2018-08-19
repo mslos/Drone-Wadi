@@ -36,6 +36,7 @@ class StatusHandler(object):
                 # Turn both LEDs on to verify that they are both working
                 GPIO.output(self.RED_PIN, GPIO.HIGH)
                 GPIO.output(self.GREEN_PIN, GPIO.HIGH)
+                time.sleep(3)
             elif self.status == "READY":
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
                 # Turn green LED on permanently
