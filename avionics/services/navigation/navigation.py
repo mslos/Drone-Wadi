@@ -59,7 +59,7 @@ class Navigation(object):
         logging.info("Connecting to vehicle on %s", connection_string)
         led_status.put("PENDING")
 
-        while not vehicle.is_armable:
+        while not self.__vehicle.is_armable:
             logging.debug("Waiting for vehicle to initialise...")
             time.sleep(1)
 
