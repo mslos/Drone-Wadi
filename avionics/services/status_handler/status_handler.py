@@ -35,20 +35,23 @@ class StatusHandler(object):
 
             # Display status via LED UI
             if self.status == "READY":
-                GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
-                # Turn green LED on permanently
-                GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
+                pass
+                # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
+                # # Turn green LED on permanently
+                # GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
             elif self.status == "PENDING":
-                GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
-                # Flash red LED on and off
-                GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
-                time.sleep(0.5) # Sleep for 1 second
-                GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
-                time.sleep(0.5) # Sleep for 1 second
+                pass
+                # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
+                # # Flash red LED on and off
+                # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+                # time.sleep(0.5) # Sleep for 1 second
+                # GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
+                # time.sleep(0.5) # Sleep for 1 second
             elif self.status == "FAILURE":
-                GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
-                # Turn red LED on permanently
-                GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+                pass
+                # GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
+                # # Turn red LED on permanently
+                # GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
             else:
                 logging.error("Undefined state, no LED action")
 
