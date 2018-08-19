@@ -11,6 +11,8 @@ class StatusHandler(object):
     def __init__(self):
 
         self.__alive = True
+        self.RED_PIN = 7
+        self.GREEN_PIN = 5
 
         if not (os.getenv('DEVELOPMENT') == 'True'):
             GPIO.setwarnings(False) # Ignore warning for now
@@ -31,20 +33,20 @@ class StatusHandler(object):
 
             # Display status via LED UI
             if self.status == "READY":
-                GPIO.output(5, GPIO.HIGH) # Turn off green
+                GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
                 # Turn green LED on permanently
-                GPIO.output(5, GPIO.HIGH) # Turn on
+                GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
             elif self.status == "PENDING":
-                GPIO.output(5, GPIO.LOW) # Turn off green
+                GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Flash red LED on and off
-                GPIO.output(7, GPIO.HIGH) # Turn on
-                time.sleep(1) # Sleep for 1 second
-                GPIO.output(7, GPIO.LOW) # Turn off
-                time.sleep(1) # Sleep for 1 second
+                GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+                time.sleep(0.5) # Sleep for 1 second
+                GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
+                time.sleep(0.5) # Sleep for 1 second
             elif self.status == "FAILURE":
-                GPIO.output(5, GPIO.LOW) # Turn off green
+                GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Turn red LED on permanently
-                GPIO.output(7, GPIO.HIGH) # Turn on
+                GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
             else:
                 logging.error("Undefined state, no LED action")
 

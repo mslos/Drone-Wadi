@@ -18,12 +18,6 @@ class Navigation(object):
 
         self.__vehicle = None
         self.__alive = True
-        self.__current_location = None
-
-    def location_callback(self, vehicle, name, location):
-        if location.global_relative_frame.alt is not None:
-            self.current_location = location.global_relative_frame
-
 
     def wait_flight_distance(self, dist, waypoint, data_station_id):
         while True:
@@ -74,8 +68,6 @@ class Navigation(object):
                 time.sleep(3)
 
         led_status.put("READY")
-
-        # self.__vehicle.add_attribute_listener('location', self.location_callback)
 
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
