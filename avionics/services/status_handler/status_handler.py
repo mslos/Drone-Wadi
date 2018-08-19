@@ -11,8 +11,8 @@ class StatusHandler(object):
     def __init__(self):
 
         self.__alive = True
-        self.RED_PIN = 7
-        self.GREEN_PIN = 5
+        self.RED_PIN = 5
+        self.GREEN_PIN = 7
 
         if not (os.getenv('DEVELOPMENT') == 'True'):
             GPIO.setwarnings(False) # Ignore warning for now
