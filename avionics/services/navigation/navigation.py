@@ -83,9 +83,13 @@ class Navigation(object):
         while self.__alive:
             # Get most up-to-date mission
             logging.debug("Downloading waypoints...")
-            waypoints = self.__vehicle.commands
-            waypoints.download()
-            waypoints.wait_ready()
+            try:
+                waypoints = self.__vehicle.commands
+                waypoints.download()
+                logging.error("Waiting for download")
+                waypoints.wait_ready()
+            except:
+                logging.error("Waypoint download failure")
 
             waypoint_count = len(waypoints)
 
