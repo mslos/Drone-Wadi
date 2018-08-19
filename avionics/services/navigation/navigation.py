@@ -67,14 +67,14 @@ class Navigation(object):
         #     logging.error("Failed to connect to vehicle. Retrying...")
         #     time.sleep(3)
 
-        # while self.__alive == True and self.__vehicle == None:
-        #     try:
-        #         self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
-        #         logging.info("Connection to vehicle successful")
-        #         break
-        #     except:
-        #         logging.error("Failed to connect to vehicle. Retrying...")
-        #         time.sleep(3)
+        while self.__alive == True and self.__vehicle == None:
+            try:
+                self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
+                logging.info("Connection to vehicle successful")
+                break
+            except:
+                logging.error("Failed to connect to vehicle. Retrying...")
+                time.sleep(3)
 
         # led_status.put("READY")
         # Continously monitor state of autopilot and kick of download when necessary
