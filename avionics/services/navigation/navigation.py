@@ -69,7 +69,7 @@ class Navigation(object):
                 led_status.put("FAILURE")
                 time.sleep(3)
 
-        while not self.__vehicle.home_position:
+        while not self.__vehicle._home_location:
             print "Waiting for home position..."
             time.sleep(1)
 
