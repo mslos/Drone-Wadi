@@ -111,7 +111,7 @@ class Navigation(object):
             time.sleep(3)
             wakeup_event.set()
 
-            while not is_awake.is_set()
+            while not is_awake.is_set():
                 time.sleep(1)
 
             download_event.set()
