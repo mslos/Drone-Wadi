@@ -141,3 +141,36 @@ class XBee(object):
                 identity_index = 0
 
         return False # Unsuccessful ACK
+
+
+if __name__ == '__main__':
+    port = raw_input("Enter Serial Port: ")
+    if (port):
+        xbee = XBee(serial_port=port)
+    else:
+        xbee = XBee()
+
+    xbee.connect()
+
+    target_station = raw_input("Enter target station ID: ")
+
+    while True:
+        print("---Command Options---")
+        print("   POWER_ON : 1")
+        print("   POWER_OFF : 2")
+        print("   EXTEND_TIME: 3")
+        cmd = raw_input("Enter desired Command: ")
+
+        if (cmd == '1'):
+            command = 'POWER_ON'
+        elif (cmd == '2'):
+            command = 'POWER_OFF'
+        else:
+            command = 'EXTEND_TIME'
+
+        xbee.send_command(target_station, command)
+        time.sleep(1)
+        if xbee.acknowledge(target_station, command):
+            print("Message Aknowledged")
+        else:
+            print("Message NOT Aknowledged\n")
