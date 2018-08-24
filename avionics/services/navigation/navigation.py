@@ -135,7 +135,7 @@ class Navigation(object):
                 time.sleep(5)
 
                 # Wait until the sUAS is within 5000 m (5 km) of the data station for XBee wakeup
-                if not (os.environ("HARDWARE_TEST") == 'True'):
+                if not (os.getenv("HARDWARE_TEST") == 'True'):
                     self.wait_flight_distance(5000, waypoints[next_data_station_index], data_station_id)
 
                 logging.info("Beginning XBee wakeup from data station %s...", data_station_id)
@@ -144,7 +144,7 @@ class Navigation(object):
                 wakeup_event.set()
 
                 # Wait until the sUAS is within 1000 m (1 km) of the data station for SFTP download
-                if not (os.environ("HARDWARE_TEST") == 'True'):
+                if not (os.getenv("HARDWARE_TEST") == 'True'):
                     self.wait_flight_distance(1000, waypoints[next_data_station_index], data_station_id)
                 logging.info("Beginning data download from data station %s...", data_station_id)
 
