@@ -122,8 +122,11 @@ class Navigation(object):
                     next_data_station_index = i
                     break
 
-            # No more data stations to service
-            if next_data_station_index != None:
+            if not self.__vehicle.armed:
+                logging.info("Waiting for arming...")
+                time.sleep(3)
+
+            elif next_data_station_index != None:
 
                 # By default, PX4 uses floats. We use strings (of rounded integers) for data station IDs
                 data_station_id = str(int(waypoints[next_data_station_index+1].param3))
@@ -163,14 +166,20 @@ class Navigation(object):
                 wakeup_event.clear()
                 download_event.clear()
 
+                # Wait till we actually hit the waypoint before moving to next one
+                # This is critical for flights with low margins for error with flight paths
+                # This also makes SITL a little more realistic
+                self.wait_flight_distance(100, waypoints[next_data_station_index], data_station_id)
+
                 # Skip the ROI point
-                next_waypoint = current_waypoint+2
+                next_waypoint = next_data_station_index+2
                 logging.info("Done downloading. Moving on to waypoint %i...", (next_waypoint+1))
                 self.__vehicle.commands.next = next_waypoint
 
+            # No more data stations to service
             else:
-                logging.debug("No more data stations in mission...")
-                time.sleep(5)
+                logging.info("No more data stations in mission...")
+                time.sleep(10)
 
 
     def stop(self):
