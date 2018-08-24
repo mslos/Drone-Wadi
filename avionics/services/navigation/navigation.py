@@ -107,13 +107,18 @@ class Navigation(object):
 
             waypoint_count = len(waypoints)
 
+            # Zero base index into waypoints list
+            current_waypoint = self.__vehicle.commands.next-1
+            logging.debug("Current waypoint: %s", current_waypoint)
+
             next_data_station_index = None
 
             # Filter for next data station
             for i in range(waypoint_count):
                 # A data station is marked as LOITER waypoint followed by a DO_SET_ROI
-                if waypoints[i].command == self.LOITER_WAYPOINT_COMMAND and \
-                    waypoints[i+1].command == self.ROI_WAYPOINT_COMMAND:
+                if i >= current_waypoint and \
+                  waypoints[i].command == self.LOITER_WAYPOINT_COMMAND and \
+                  waypoints[i+1].command == self.ROI_WAYPOINT_COMMAND:
                     next_data_station_index = i
                     break
 
