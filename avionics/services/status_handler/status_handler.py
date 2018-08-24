@@ -66,8 +66,9 @@ class StatusHandler(object):
         logging.info("Stoping status handler...")
 
         # Turn off the LEDs
-        GPIO.output(self.RED_PIN, GPIO.LOW)
-        GPIO.output(self.GREEN_PIN, GPIO.LOW)
+        if not (os.getenv('DEVELOPMENT') == 'True'):
+            GPIO.output(self.RED_PIN, GPIO.LOW)
+            GPIO.output(self.GREEN_PIN, GPIO.LOW)
 
         # Kill the run method
         self.__alive = False

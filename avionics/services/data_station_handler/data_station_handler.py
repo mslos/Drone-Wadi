@@ -91,11 +91,11 @@ class DataStationHandler(object):
         download_event.wait()
 
         # Don't actually download
-        if (os.getenv('TESTING') == 'True'):
+        if (os.getenv('TESTING') == 'True' or os.getenv('DEVELOPMENT') == 'True'):
             r = random.randint(10,20)
 
             logging.debug('Simulating download for %i seconds', r)
-            time.sleep(r) # "Download" for random time between 10 and 100 seconds
+            time.sleep(r) # "Download" for random time between 10 and 20 seconds
 
         # Only try download if wakeup was successful
         elif (wakeup_successful): # This is the real world (ahhh!)
@@ -128,7 +128,8 @@ class DataStationHandler(object):
 
         xbee_sleep_command_timer = Timer()
         # If the data station actually turned on and we're not in test mode, shut it down
-        if not (os.getenv('TESTING') == 'True') and (wakeup_successful == True):
+        if not ((os.getenv('TESTING') == 'True') or os.getenv('DEVELOPMENT') == 'True') and \
+            (wakeup_successful == True):
             while not self.xbee.acknowledge(data_station_id, 'POWER_OFF'):
                 logging.debug("POWER_OFF data station %s", data_station_id)
                 self.xbee.send_command(data_station_id, 'POWER_OFF')
@@ -136,10 +137,12 @@ class DataStationHandler(object):
 
                 # Will try shutting down data station over XBee for 20 seconds before moving on
                 if xbee_sleep_command_timer.time_elapsed() > 20:
-                    logging.error("POWER_OFF command ACK failure. Moving on...")
+                    logging.error("POWER_OFF command ACK failure")
                     break
 
         is_awake.clear()
 
         # Mark task as complete, even if it fails
         self.rx_queue.task_done()
+
+        logging.debug("Moving on...")

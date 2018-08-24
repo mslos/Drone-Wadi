@@ -63,10 +63,11 @@ class Navigation(object):
         while self.__alive == True and self.__vehicle == None:
             try:
                 # Verify that the serial port is cleared
-                s = serial.Serial("/dev/ttyACM0", baudrate=115200)
-                s.close()
-                time.sleep(3) # CLOSE PLS
-                logging.info("Cleared serial port")
+                if not (os.getenv('DEVELOPMENT') == 'True'):
+                    s = serial.Serial("/dev/ttyACM0", baudrate=115200)
+                    s.close()
+                    time.sleep(3) # CLOSE PLS
+                    logging.info("Cleared serial port")
 
                 self.__vehicle = connect(connection_string, baud=115200, wait_ready=True)
                 logging.info("Connection to vehicle successful")
@@ -134,14 +135,17 @@ class Navigation(object):
                 time.sleep(5)
 
                 # Wait until the sUAS is within 5000 m (5 km) of the data station for XBee wakeup
-                self.wait_flight_distance(5000, waypoints[next_data_station_index], data_station_id)
+                if not (os.environ("HARDWARE_TEST") == 'True'):
+                    self.wait_flight_distance(5000, waypoints[next_data_station_index], data_station_id)
+
                 logging.info("Beginning XBee wakeup from data station %s...", data_station_id)
 
                 # Tell the data station handler to begin wakeup
                 wakeup_event.set()
 
                 # Wait until the sUAS is within 1000 m (1 km) of the data station for SFTP download
-                self.wait_flight_distance(1000, waypoints[next_data_station_index], data_station_id)
+                if not (os.environ("HARDWARE_TEST") == 'True'):
+                    self.wait_flight_distance(1000, waypoints[next_data_station_index], data_station_id)
                 logging.info("Beginning data download from data station %s...", data_station_id)
 
                 # Tell the data stataion handler to begin download
