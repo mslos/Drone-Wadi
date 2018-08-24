@@ -37,10 +37,12 @@ class StatusHandler(object):
                 GPIO.output(self.RED_PIN, GPIO.HIGH)
                 GPIO.output(self.GREEN_PIN, GPIO.HIGH)
                 time.sleep(3) # Block to give the operator enough time to verify
+
             elif self.status == "READY":
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off red
                 # Turn green LED on permanently
                 GPIO.output(self.GREEN_PIN, GPIO.HIGH) # Turn on
+
             elif self.status == "PENDING":
                 GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Flash red LED on and off
@@ -48,10 +50,12 @@ class StatusHandler(object):
                 time.sleep(0.5) # Sleep for 0.5 second
                 GPIO.output(self.RED_PIN, GPIO.LOW) # Turn off
                 time.sleep(0.5) # Sleep for 0.5 second
+
             elif self.status == "FAILURE":
                 GPIO.output(self.GREEN_PIN, GPIO.LOW) # Turn off green
                 # Turn red LED on permanently
                 GPIO.output(self.RED_PIN, GPIO.HIGH) # Turn on
+
             else:
                 logging.error("Undefined state, no LED action")
                 # Turn off both LEDs
@@ -60,6 +64,7 @@ class StatusHandler(object):
 
     def stop(self):
         logging.info("Stoping status handler...")
+
         # Turn off the LEDs
         GPIO.output(self.RED_PIN, GPIO.LOW)
         GPIO.output(self.GREEN_PIN, GPIO.LOW)

@@ -48,7 +48,7 @@ class Navigation(object):
     def run(self, wakeup_event, download_event, new_ds, is_downloading, is_awake, led_status):
 
         #######################################################################
-        # Connect to autopilot
+        # Connect to the autopilot
         #######################################################################
 
         if (os.getenv('DEVELOPMENT') == 'True'):
@@ -78,6 +78,12 @@ class Navigation(object):
 
         time.sleep(3) # Verify LEDs
 
+        #######################################################################
+        # Monitor location relative to next data station to instruct the data
+        # station handler to step through the wakeup and download process
+        # when most efficient
+        #######################################################################
+
         # Continously monitor state of autopilot and kick of download when necessary
         current_waypoint = 0
         waypoints = []
@@ -100,33 +106,42 @@ class Navigation(object):
 
             waypoint_count = len(waypoints)
 
-            # Zero base index into waypoints list
-            current_waypoint = self.__vehicle.commands.next-1
-            logging.debug("Current waypoint: %s", current_waypoint)
+            next_data_station_index = None
 
-            # If we are en route to a data station (marked as LOITER waypoint followed by an ROI)
-            if (waypoint_count-current_waypoint > 1) and \
-                (waypoints[current_waypoint].command == self.LOITER_WAYPOINT_COMMAND) and \
-                (waypoints[current_waypoint+1].command == self.ROI_WAYPOINT_COMMAND):
+            # Filter for next data station
+            for i in range(waypoint_count):
+                # A data station is marked as LOITER waypoint followed by a DO_SET_ROI
+                if waypoints[i].command == self.LOITER_WAYPOINT_COMMAND and \
+                    waypoints[i+1].command == self.ROI_WAYPOINT_COMMAND:
+                    next_data_station_index = i
+                    break
+
+            # No more data stations to service
+            if next_data_station_index != None:
+
                 # By default, PX4 uses floats. We use strings (of rounded integers) for data station IDs
-                data_station_id = str(int(waypoints[current_waypoint+1].param3))
+                data_station_id = str(int(waypoints[next_data_station_index+1].param3))
 
                 logging.info("En route to data station: %s", data_station_id)
 
                 # Pass the data station ID to the data station handler
                 self.rx_queue.put(data_station_id)
+
+                # Let the data station handler know there's a new station to service
                 new_ds.set()
 
-                # Give the DataStationHandler some time to kick off the download
+                # Give the data station hander some time to pick up the new data station ID
                 time.sleep(5)
 
-                self.wait_flight_distance(5000, waypoints[current_waypoint], data_station_id)
+                # Wait until the sUAS is within 5000 m (5 km) of the data station for XBee wakeup
+                self.wait_flight_distance(5000, waypoints[next_data_station_index], data_station_id)
                 logging.info("Beginning XBee wakeup from data station %s...", data_station_id)
 
                 # Tell the data station handler to begin wakeup
                 wakeup_event.set()
 
-                self.wait_flight_distance(1000, waypoints[current_waypoint], data_station_id)
+                # Wait until the sUAS is within 1000 m (1 km) of the data station for SFTP download
+                self.wait_flight_distance(1000, waypoints[next_data_station_index], data_station_id)
                 logging.info("Beginning data download from data station %s...", data_station_id)
 
                 # Tell the data stataion handler to begin download
@@ -145,8 +160,9 @@ class Navigation(object):
                 self.__vehicle.commands.next = next_waypoint
 
             else:
-                logging.debug("Not at data station...")
-                time.sleep(3)
+                logging.debug("No more data stations in mission...")
+                time.sleep(5)
+
 
     def stop(self):
         logging.info("Stoping navigation...")
