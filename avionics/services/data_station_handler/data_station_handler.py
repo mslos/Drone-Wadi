@@ -81,8 +81,8 @@ class DataStationHandler(object):
                 self.xbee.send_command(data_station_id, 'POWER_ON')
                 time.sleep(0.5) # Try again in 0.5s
 
-                # Will try waking up data station over XBee for minimum 2 min before moving on
-                if download_event.is_set() and xbee_wake_command_timer.time_elapsed() > 120:
+                # Will try waking up data station over XBee for minimum 4 min before moving on
+                if download_event.is_set() and xbee_wake_command_timer.time_elapsed() > 240:
                     wakeup_successful = False
                     logging.error("POWER_ON command ACK failure. Moving on...")
                     break

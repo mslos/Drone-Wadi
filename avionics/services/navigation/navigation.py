@@ -154,25 +154,3 @@ class Navigation(object):
         if self.__vehicle != None:
             self.__vehicle.close()
             time.sleep(3) # CLOSE PLS
-
-
-# # Pass the data station ID to the data station handler
-# self.rx_queue.put("321")
-# new_ds.set()
-#
-# time.sleep(3)
-# wakeup_event.set()
-#
-# while not is_awake.is_set():
-#     time.sleep(1)
-#
-# download_event.set()
-#
-# while is_downloading.is_set():
-#     logging.debug("Downloading...")
-#     time.sleep(3)
-#
-# wakeup_event.clear()
-# download_event.clear()
-#
-# self.stop()
