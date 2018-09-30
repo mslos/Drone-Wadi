@@ -13,9 +13,6 @@ class XBee(object):
     instruct the data station's microcontroller to boot the data station computer
     and initiate the download over Wi-Fi.
 
-    Todo:
-        * Wake up data station when on the way so it's ready when we arrive
-
     """
 
     def __init__(self, serial_port="/dev/ttyUSB0"):
@@ -95,13 +92,6 @@ class XBee(object):
 
         preamble_success = False
         preamble_index = 0
-
-        # # Update hash with new data_station_id
-        # hash = hashlib.md5()
-        # hash.update(data_station_id.encode('utf-8'))
-        #
-        # # Get MD5 hash to 3 hex characters
-        # identity_code = hash.hexdigest()[0:3]
 
         identity_code = data_station_id
 
