@@ -23,8 +23,7 @@ class XBee(object):
         self.data_station_id = None
         self.serial_port = serial_port
 
-        self.preamble_out = 'street'
-        self.preamble_in = 'cat'
+        self.start_delimiter = '~' # 0x7E in ASCII
 
         # TODO: make single dictionary
         self.encode = {
@@ -68,8 +67,8 @@ class XBee(object):
 
         identity_code = data_station_id
 
-        logging.debug("XBee TX: %s" % self.preamble_out)
-        self.xbee_port.write(self.preamble_out.encode('utf-8'))
+        logging.debug("XBee TX: %s" % self.start_delimiter)
+        self.xbee_port.write(self.start_delimiter.encode('utf-8'))
 
         logging.debug("XBee TX: %s" % identity_code)
         self.xbee_port.write(identity_code.encode('utf-8'))
@@ -90,8 +89,7 @@ class XBee(object):
         iden_match = False
         identity_index = 0
 
-        preamble_success = False
-        preamble_index = 0
+        start_delimiter_success = False
 
         identity_code = data_station_id
 
@@ -107,27 +105,24 @@ class XBee(object):
                 return (incoming_byte == command_code)
 
             # Second pass: Check for identity match
-            elif (preamble_success == True):
+            elif (start_delimiter_success == True):
                 logging.debug("XBee checking ID")
                 if (incoming_byte == identity_code[identity_index]):
                     identity_index += 1
                 else:
-                    preamble_success = False
-                    preamble_index = 0
+                    start_delimiter_success = False
 
                 iden_match = (identity_index == 3)
 
-            # First pass: Check for preamble match
-            elif (incoming_byte == self.preamble_in[preamble_index]):
-                logging.debug("XBee checking preamble")
-                preamble_index+=1
-                preamble_success = (preamble_index == 3)
+            # First pass: Check for start delimiter match
+            elif (incoming_byte == self.start_delimiter):
+                logging.debug("XBee checking start delimiter")
+                start_delimiter_success = True
 
             # Reset
             else:
                 iden_match = False
-                preamble_success = False
-                preamble_index = 0
+                start_delimiter_success = False
                 identity_index = 0
 
         return False # Unsuccessful ACK
