@@ -160,6 +160,7 @@ if __name__ == '__main__':
 
         xbee.send_command(target_station, command)
         time.sleep(1)
+
         if xbee.acknowledge(target_station, command):
             print("Message Aknowledged")
         else:
