@@ -8,7 +8,7 @@ from services.data_station_handler import DataStationHandler
 class TestDataStationHandler(unittest.TestCase):
 
     def setUp(self):
-        self._rx_queue = queue.Queue()
+        self.rx_queue = queue.Queue()
         self.wakeup_event = threading.Event()
         self.download_event = threading.Event()
         self.new_ds = threading.Event()
@@ -16,7 +16,7 @@ class TestDataStationHandler(unittest.TestCase):
         self.is_awake = threading.Event()
 
         # One second connection timeout, read/write timeout, and 2 second overall timeout
-        self._data_station_handler = DataStationHandler(1000, 1000, 2000, self._rx_queue)
+        self._data_station_handler = DataStationHandler(1000, 1000, 2000, self.rx_queue)
         self._data_station_handler.connect()
 
     def tearDown(self):
