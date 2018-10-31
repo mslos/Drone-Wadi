@@ -24,12 +24,14 @@ class TestDataStationHandler(unittest.TestCase):
     def test_full_stack(self):
         """Data station handler clears RX queue as it receives station IDs"""
 
+        logging.getLogger(__name__)
+
         self.rx_queue.put("321")
 
         print("Waking up data station")
         self.wakeup_event.set()
         self.download_event.set()
-        
+
         self._data_station_handler._wake_download_and_sleep(self.wakeup_event, self.download_event, self.is_downloading, self.is_awake)
 
 
