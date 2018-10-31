@@ -2,8 +2,12 @@ import queue
 import threading
 import time
 import unittest
+import sys
 
 from services.data_station_handler import DataStationHandler
+
+logger = logging.getLogger()
+logger.level = logging.DEBUG
 
 class TestDataStationHandler(unittest.TestCase):
 
@@ -24,7 +28,8 @@ class TestDataStationHandler(unittest.TestCase):
     def test_full_stack(self):
         """Data station handler clears RX queue as it receives station IDs"""
 
-        logging.getLogger(__name__)
+        stream_handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(stream_handler)
 
         self.rx_queue.put("321")
 
@@ -33,8 +38,6 @@ class TestDataStationHandler(unittest.TestCase):
         self.download_event.set()
 
         self._data_station_handler._wake_download_and_sleep(self.wakeup_event, self.download_event, self.is_downloading, self.is_awake)
-
-
 
         print(self.rx_queue.get())
 
