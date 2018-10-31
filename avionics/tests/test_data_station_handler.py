@@ -36,4 +36,4 @@ class TestDataStationHandler(unittest.TestCase):
         print("Starting download")
         self.download_event.set()
 
-        self.assertEquals(self._rx_queue.qsize(), 0)
+        self.assertEquals(self.rx_queue.qsize(), 0)
