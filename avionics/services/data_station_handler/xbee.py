@@ -134,11 +134,7 @@ class XBee(object):
 
 
 if __name__ == '__main__':
-    port = raw_input("Enter Serial Port: ")
-    if (port):
-        xbee = XBee(serial_port=port)
-    else:
-        xbee = XBee()
+    xbee = XBee(serial_port="/dev/ttyUSB0")
 
     xbee.connect()
 
@@ -162,6 +158,6 @@ if __name__ == '__main__':
         time.sleep(1)
 
         if xbee.acknowledge(target_station, command):
-            print("Message Aknowledged")
+            print("Acknowledge\n")
         else:
-            print("Message NOT Aknowledged\n")
+            print("Not acknowledged\n")
