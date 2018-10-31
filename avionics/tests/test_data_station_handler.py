@@ -3,14 +3,17 @@ import threading
 import time
 import unittest
 
-from avionics.services.data_station_handler import DataStationHandler
+from services.data_station_handler import DataStationHandler
 
 class TestDataStationHandler(unittest.TestCase):
 
     def setUp(self):
         self._rx_queue = queue.Queue()
-        self._rx_lock = threading.Lock()
-        self._is_downloading = threading.Event()
+        self.wakeup_event = threading.Event()
+        self.download_event = threading.Event()
+        self.new_ds = threading.Event()
+        self.is_downloading = threading.Event()
+        self.is_awake = threading.Event()
 
         # One second connection timeout, read/write timeout, and 2 second overall timeout
         self._data_station_handler = DataStationHandler(1000, 1000, 2000, self._rx_queue)
@@ -19,11 +22,20 @@ class TestDataStationHandler(unittest.TestCase):
     def tearDown(self):
         self._data_station_handler.stop()
 
-    def test_clears_rx_queue(self):
+    def test_full_stack(self):
         """Data station handler clears RX queue as it receives station IDs"""
 
-        self._rx_queue.put('streetcat')
+        target_station = raw_input("Enter target station ID: ")
 
-        self._data_station_handler._wake_download_and_sleep(self._rx_lock, self._is_downloading)
+        self.rx_queue.put(target_station)
+        self.new_ds.set()
+
+        print("Waking up data station")
+        self.wakeup_event.set()
+
+        time.sleep(10)
+
+        print("Starting download")
+        self.download_event.set()
 
         self.assertEquals(self._rx_queue.qsize(), 0)
