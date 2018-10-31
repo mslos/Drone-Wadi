@@ -3,6 +3,7 @@ import threading
 import time
 import unittest
 import sys
+import logging
 
 from services.data_station_handler import DataStationHandler
 
