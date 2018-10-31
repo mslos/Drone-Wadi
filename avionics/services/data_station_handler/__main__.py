@@ -4,10 +4,6 @@ import queue
 import time
 import threading
 
-from .timer import Timer
-from .download import Download
-from .xbee import XBee
-
 # General infrastructure
 rx_queue = queue.Queue()
 wakeup_event = threading.Event()
