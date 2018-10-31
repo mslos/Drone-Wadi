@@ -3,7 +3,7 @@ import threading
 import time
 import unittest
 
-from avionics.services.data_station_handler import DataStationHandler
+from services.data_station_handler import DataStationHandler
 
 class TestDataStationHandler(unittest.TestCase):
 
