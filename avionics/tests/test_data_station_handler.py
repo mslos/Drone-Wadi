@@ -20,7 +20,7 @@ class TestDataStationHandler(unittest.TestCase):
         self.is_awake = threading.Event()
 
         # One second connection timeout, read/write timeout, and 2 second overall timeout
-        self._data_station_handler = DataStationHandler(10000, 10000, 60000, self.rx_queue)
+        self._data_station_handler = DataStationHandler(120000, 120000, 600000, self.rx_queue)
         self._data_station_handler.connect()
 
     def tearDown(self):
