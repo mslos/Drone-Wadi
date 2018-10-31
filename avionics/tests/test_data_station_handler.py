@@ -11,8 +11,6 @@ class TestDataStationHandler(unittest.TestCase):
         self.rx_queue = queue.Queue()
         self.wakeup_event = threading.Event()
         self.download_event = threading.Event()
-        self.new_ds = threading.Event()
-        self.is_downloading = threading.Event()
         self.is_awake = threading.Event()
 
         # One second connection timeout, read/write timeout, and 2 second overall timeout
@@ -25,15 +23,13 @@ class TestDataStationHandler(unittest.TestCase):
     def test_full_stack(self):
         """Data station handler clears RX queue as it receives station IDs"""
 
-        self._data_station_handler.run(self.wakeup_event, self.download_event, self.new_ds, self.is_downloading, self.is_awake)
-
         self.rx_queue.put("321")
-        self.new_ds.set()
+        self._data_station_handler._wake_download_and_sleep(self.wakeup_event, self.download_event, self.is_downloading, self.is_awake)
 
         print("Waking up data station")
         self.wakeup_event.set()
 
-        time.sleep(10)
+        time.sleep("5")
 
         print("Starting download")
         self.download_event.set()
