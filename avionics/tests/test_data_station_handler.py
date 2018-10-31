@@ -11,6 +11,7 @@ class TestDataStationHandler(unittest.TestCase):
         self.rx_queue = queue.Queue()
         self.wakeup_event = threading.Event()
         self.download_event = threading.Event()
+        self.is_downloading = threading.Event()
         self.is_awake = threading.Event()
 
         # One second connection timeout, read/write timeout, and 2 second overall timeout
