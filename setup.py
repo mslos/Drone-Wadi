@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
-setup(name='firefly-mule',
+setup(name='data-mule',
       version='0.1.0',
-      description='Companion computer avionics package for BirdsEyeView FireFLY6 PRO',
+      description='Companion computer avionics package for Mission Mule Data Mule',
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 3.6',
       ],
-      url='https://github.com/missionmule/firefly-mule',
+      url='https://github.com/missionmule/data-mule',
       author='Zane Mountcastle',
       author_email='zane@missionmule.com',
       packages=['avionics'],
